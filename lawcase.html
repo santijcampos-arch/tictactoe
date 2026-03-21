@@ -1923,6 +1923,94 @@
     localStorage.setItem('negrolex_pendientes', JSON.stringify(pendientes));
   }
 
+  function updatePendientesBadge() {
+    const activos = pendientes.filter(p => !p.completadoEn);
+    const hayUrgentes = activos.some(p => p.urgente);
+    const badge = document.getElementById('pendientes-badge');
+    if (!badge) return;
+    badge.textContent = activos.length;
+    badge.classList.toggle('visible', activos.length > 0);
+    badge.classList.toggle('urgent', hayUrgentes);
+  }
+
+  function timeAgo(isoString) {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return mins <= 1 ? 'hace un momento' : `hace ${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `hace ${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    if (days === 1) return 'hace 1 día';
+    if (days < 7) return `hace ${days} días`;
+    const weeks = Math.floor(days / 7);
+    return weeks === 1 ? 'hace 1 semana' : `hace ${weeks} semanas`;
+  }
+
+  function renderPendientesActivos() {
+    const container = document.getElementById('p-list-activos');
+    if (!container) return;
+    const activos = pendientes
+      .filter(p => !p.completadoEn)
+      .sort((a, b) => {
+        if (a.urgente && !b.urgente) return -1;
+        if (!a.urgente && b.urgente) return 1;
+        return new Date(b.creadoEn) - new Date(a.creadoEn);
+      });
+    if (activos.length === 0) {
+      container.innerHTML = '<div class="p-empty">Sin pendientes activos</div>';
+      return;
+    }
+    container.innerHTML = activos.map(p => {
+      const casoNombre = p.casoId ? (() => {
+        const c = cases.find(c => c.id === p.casoId);
+        return c ? esc(c.clientName + (c.caseTitle ? ' — ' + c.caseTitle : '')) : null;
+      })() : null;
+      const metaHtml = casoNombre
+        ? `<span class="p-meta"><span class="p-case-link" onclick="openCaseDetail('${esc(p.casoId)}');showView('view-case-detail')">📁 ${casoNombre}</span></span>`
+        : `<span class="p-meta">Sin caso</span>`;
+      // Note: no explicit closePendientes() here — showView() already calls it (wired in Task 7 Step 2)
+      return `
+        <div class="p-item${p.urgente ? ' urgente' : ''}" data-id="${esc(p.id)}">
+          <div class="p-check" onclick="completarPendiente('${esc(p.id)}')" title="Marcar como hecho"></div>
+          <div class="p-body">
+            <div class="p-text">${esc(p.texto)}</div>
+            ${metaHtml}
+          </div>
+          <button class="p-urgencia-btn" onclick="toggleUrgencia('${esc(p.id)}')" title="${p.urgente ? 'Quitar urgencia' : 'Marcar urgente'}">●</button>
+        </div>`;
+    }).join('');
+  }
+
+  function renderPendientesHistorial() {
+    const container = document.getElementById('p-list-historial');
+    if (!container) return;
+    const hist = pendientes
+      .filter(p => p.completadoEn)
+      .sort((a, b) => new Date(b.completadoEn) - new Date(a.completadoEn));
+    if (hist.length === 0) {
+      container.innerHTML = '<div class="p-empty">El historial está vacío</div>';
+      return;
+    }
+    container.innerHTML = hist.map(p => `
+      <div class="p-hist-item">
+        <div class="p-check-done">✓</div>
+        <div class="p-body">
+          <div class="p-hist-text">${esc(p.texto)}</div>
+          <div class="p-hist-meta">${timeAgo(p.completadoEn)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderPendientes() {
+    renderPendientesActivos();
+    renderPendientesHistorial();
+    updatePendientesBadge();
+    // Update tab labels
+    const activos = pendientes.filter(p => !p.completadoEn);
+    const tabActivos = document.getElementById('p-tab-activos');
+    if (tabActivos) tabActivos.textContent = `Activos (${activos.length})`;
+  }
+
   function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
