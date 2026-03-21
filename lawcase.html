@@ -1,0 +1,3305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NegroLex</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-base:        #0d1117;
+      --bg-surface:     #161b22;
+      --bg-raised:      #1c2333;
+      --bg-hover:       #21262d;
+      --accent:         #c9a84c;
+      --accent-dim:     #8a6e2f;
+      --text-primary:   #e6edf3;
+      --text-secondary: #8b949e;
+      --danger:         #f85149;
+      --warning:        #d29922;
+      --success:        #3fb950;
+      --border:         #30363d;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      min-height: 100vh;
+    }
+
+    /* ── Views ────────────────────────────────────────────────── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── App shell ────────────────────────────────────────────── */
+    .app-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .app-header h1 {
+      font-size: 1.35rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .app-header .subtitle {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      flex: 1;
+    }
+    .app-header .sync-info {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── Toast ─────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.87rem;
+      font-weight: 500;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast--ok  { background: rgba(63,185,80,0.15); border: 1px solid rgba(63,185,80,0.4); color: var(--success); }
+    .toast--err { background: rgba(248,81,73,0.15); border: 1px solid rgba(248,81,73,0.4); color: var(--danger); }
+    .toast--info{ background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.35); color: var(--accent); }
+
+    /* ── Urgency banner ────────────────────────────────────────── */
+    .urgency-banner {
+      display: none;
+      background: rgba(248,81,73,0.08);
+      border: 1px solid rgba(248,81,73,0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .urgency-banner__title { font-size: 0.8rem; font-weight: 700; color: var(--danger); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .urgency-banner__items { display: flex; flex-direction: column; gap: 5px; }
+    .urgency-banner__item  { font-size: 0.82rem; color: var(--text-primary); cursor: pointer; padding: 3px 6px; border-radius: 4px; }
+    .urgency-banner__item:hover { background: rgba(248,81,73,0.1); }
+
+    /* ── possibleClosed badge ───────────────────────────────────── */
+    .badge-closed { display: inline-flex; align-items: center; gap: 4px; background: rgba(210,153,34,0.12); border: 1px solid rgba(210,153,34,0.35); color: var(--warning); font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+    .possibly-closed-alert { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; color: var(--warning); line-height: 1.45; }
+
+    /* ── Stat clickable ─────────────────────────────────────────── */
+    .stat-link { cursor: pointer; text-decoration: none; }
+    .stat-link:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+
+    .page-body { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+    /* ── Buttons ──────────────────────────────────────────────── */
+    .btn {
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+    .btn--primary {
+      background: var(--accent);
+      color: #0d1117;
+      border-color: var(--accent);
+    }
+    .btn--primary:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
+    .btn--secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+    .btn--secondary:hover { background: var(--bg-hover); border-color: var(--text-secondary); }
+    .btn--danger {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+    .btn--danger:hover { background: #c0392b; border-color: #c0392b; }
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      cursor: pointer;
+      padding: 6px 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: var(--accent); }
+
+    /* ── Dashboard panels ─────────────────────────────────────── */
+    .dashboard-intro {
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .dashboard-intro h2 {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+    .btn--sheets {
+      background: #1a7340;
+      color: #fff;
+      border-color: #1a7340;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+    .btn--sheets:hover { background: #145c32; border-color: #145c32; }
+    .btn--sheets:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .panel-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .panel-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 24px rgba(201, 168, 76, 0.12);
+      transform: translateY(-2px);
+    }
+    .panel-card:hover::before { opacity: 1; }
+
+    .panel-card__icon {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+    }
+    .panel-card__title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 18px;
+      letter-spacing: 0.5px;
+    }
+    .panel-card__stats {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .panel-stat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
+    .panel-stat__label { color: var(--text-secondary); }
+    .panel-stat__value {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+      min-width: 28px;
+      text-align: right;
+    }
+    .panel-stat__value.has-warning { color: var(--warning); }
+    .panel-stat__value.has-danger  { color: var(--danger); }
+
+    /* ── Case list view ───────────────────────────────────────── */
+    .view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .view-header-left { display: flex; flex-direction: column; gap: 6px; }
+    .view-header h2 {
+      font-size: 1.25rem;
+      color: var(--text-primary);
+    }
+    .category-badge {
+      display: inline-block;
+      background: rgba(201, 168, 76, 0.15);
+      color: var(--accent);
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(201, 168, 76, 0.3);
+    }
+
+    .table-wrap { overflow-x: auto; }
+    .case-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .case-table thead tr {
+      background: var(--bg-raised);
+      border-bottom: 1px solid var(--border);
+    }
+    .case-table th {
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .case-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .case-table tbody tr:hover { background: var(--bg-hover); }
+    .case-table td {
+      padding: 12px 14px;
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+    .case-table td.client-name { font-weight: 600; }
+    .case-table td.case-number {
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .case-table td.last-updated { color: var(--text-secondary); font-size: 0.82rem; }
+
+    .deadline-badge {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.3;
+      min-width: 90px;
+      text-align: center;
+    }
+    .deadline-badge .db-date { font-size: 0.72rem; font-weight: 400; opacity: 0.85; }
+    .deadline-badge--ok      { background: rgba(63,185,80,0.12);  color: var(--success); border: 1px solid rgba(63,185,80,0.3); }
+    .deadline-badge--soon    { background: rgba(210,153,34,0.15); color: var(--warning); border: 1px solid rgba(210,153,34,0.4); }
+    .deadline-badge--urgent  { background: rgba(248,81,73,0.12);  color: var(--danger);  border: 1px solid rgba(248,81,73,0.35); }
+    .deadline-badge--overdue { background: rgba(248,81,73,0.2);   color: var(--danger);  border: 1px solid rgba(248,81,73,0.5);  animation: pulse 2s infinite; }
+    .deadline-badge--none    { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); font-weight: 400; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.6; }
+    }
+
+    /* ── Análisis IA + Timeline actuaciones ───────────────────── */
+    .ia-card {
+      background: rgba(56, 139, 253, 0.07);
+      border: 1px solid rgba(56, 139, 253, 0.25);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: var(--text-primary);
+    }
+    .ia-card__header {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(56, 139, 253, 0.8);
+      margin-bottom: 8px;
+    }
+    .act-timeline { display: flex; flex-direction: column; gap: 0; margin-top: 4px; }
+    .act-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .act-item:last-child { border-bottom: none; }
+    .act-item__dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .act-item__date {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      min-width: 78px;
+      padding-top: 1px;
+    }
+    .act-item__desc {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    .act-item__doc {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 3px;
+      font-style: italic;
+    }
+
+    .precaria-block {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 22px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+    }
+    .precaria-block--ok      { background: rgba(63,185,80,0.08);  border: 1px solid rgba(63,185,80,0.3); }
+    .precaria-block--soon    { background: rgba(210,153,34,0.1);  border: 1px solid rgba(210,153,34,0.4); }
+    .precaria-block--urgent  { background: rgba(248,81,73,0.08);  border: 1px solid rgba(248,81,73,0.35); }
+    .precaria-block--overdue { background: rgba(248,81,73,0.15);  border: 1px solid rgba(248,81,73,0.5); animation: pulse 2s infinite; }
+    .precaria-block--none    { background: var(--bg-raised);      border: 1px solid var(--border); }
+    .precaria-block__icon    { font-size: 2rem; line-height: 1; }
+    .precaria-block__label   { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 2px; }
+    .precaria-block__date    { font-size: 1.25rem; font-weight: 700; }
+    .precaria-block__days    { font-size: 0.85rem; margin-top: 2px; }
+    .precaria-block--ok      .precaria-block__date,
+    .precaria-block--ok      .precaria-block__days  { color: var(--success); }
+    .precaria-block--soon    .precaria-block__date,
+    .precaria-block--soon    .precaria-block__days  { color: var(--warning); }
+    .precaria-block--urgent  .precaria-block__date,
+    .precaria-block--urgent  .precaria-block__days  { color: var(--danger); }
+    .precaria-block--overdue .precaria-block__date,
+    .precaria-block--overdue .precaria-block__days  { color: var(--danger); }
+
+    .intimacion-card {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+    }
+    .intimacion-card__header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .intimacion-card__title { font-weight: 700; font-size: 0.95rem; }
+    .intimacion-card__meta  { font-size: 0.8rem; color: var(--text-secondary); }
+    .intimacion-card__texto {
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      background: var(--bg-surface);
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .status-active  { background: rgba(63,185,80,0.15); color: var(--success); }
+    .status-pending { background: rgba(210,153,34,0.15); color: var(--warning); }
+    .status-closed  { background: rgba(139,148,158,0.15); color: var(--text-secondary); }
+    .status-won      { background: rgba(63,185,80,0.25);  color: #56d364; border: 1px solid rgba(63,185,80,0.5); }
+    .status-lost     { background: rgba(248,81,73,0.2);   color: var(--danger); border: 1px solid rgba(248,81,73,0.4); }
+    .status-appealed { background: rgba(201,168,76,0.2);  color: var(--accent); border: 1px solid rgba(201,168,76,0.4); }
+    .status-desisted { background: rgba(139,148,158,0.15);color: var(--text-secondary); border: 1px solid var(--border); }
+
+    .estado-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .estado-intimado    { background: rgba(248,81,73,0.15);  color: var(--danger);  border: 1px solid rgba(248,81,73,0.4); }
+    .estado-normal      { background: rgba(139,148,158,0.1); color: var(--text-secondary); border: 1px solid var(--border); }
+    .estado-disposicion { background: rgba(201,168,76,0.15); color: var(--accent);  border: 1px solid rgba(201,168,76,0.4); }
+    .estado-resuelto    { background: rgba(63,185,80,0.15);  color: var(--success); border: 1px solid rgba(63,185,80,0.4); }
+    .estado-sinmov-ok   { background: rgba(63,185,80,0.15);  color: var(--success); border: 1px solid rgba(63,185,80,0.4); }
+    .estado-sinmov-med  { background: rgba(210,153,34,0.15); color: var(--warning); border: 1px solid rgba(210,153,34,0.4); }
+    .estado-sinmov-high { background: rgba(248,81,73,0.15);  color: var(--danger);  border: 1px solid rgba(248,81,73,0.4); }
+
+    /* ── Constitutional table ─────────────────────────────────── */
+    .sinmov-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+    }
+    .urgency-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 12px;
+      font-size: 0.72rem; font-weight: 700; white-space: nowrap;
+    }
+    .urgency-badge.urgent { background: rgba(255,80,80,0.15); color: #ff5555; border: 1px solid rgba(255,80,80,0.35); }
+    .urgency-badge.watch  { background: rgba(201,168,76,0.15); color: var(--accent); border: 1px solid rgba(201,168,76,0.35); }
+    .urgency-badge.normal { background: rgba(63,185,80,0.1); color: var(--success); border: 1px solid rgba(63,185,80,0.3); }
+    .suggestion-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.25);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 0.88rem; line-height: 1.6; color: var(--text-primary);
+    }
+    .suggestion-card.urgent { border-left-color: #ff5555; border-color: rgba(255,80,80,0.25); }
+    .suggestion-card.normal { border-left-color: var(--success); border-color: rgba(63,185,80,0.2); }
+    .pjn-estado {
+      display: inline-block;
+      padding: 3px 10px; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.3px;
+      background: rgba(139,148,158,0.12); color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .pjn-estado.sentencia { background: rgba(63,185,80,0.15); color: var(--success); border-color: rgba(63,185,80,0.4); }
+    .pjn-estado.despacho  { background: rgba(201,168,76,0.15); color: var(--accent); border-color: rgba(201,168,76,0.4); }
+    .case-table td.tribunal-col { font-size: 0.82rem; color: var(--text-secondary); max-width: 200px; }
+    .case-table td.ultima-col   { font-size: 0.8rem; color: var(--text-secondary); max-width: 220px; overflow: hidden; }
+    .ultima-fecha { color: var(--accent); font-size: 0.75rem; font-weight: 600; display: block; margin-bottom: 2px; }
+    .ultima-desc  { color: var(--text-secondary); font-size: 0.78rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-secondary);
+    }
+    .empty-state p { font-size: 0.95rem; margin-bottom: 16px; }
+
+    /* ── Case detail view ─────────────────────────────────────── */
+    .detail-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 32px;
+      max-width: 760px;
+    }
+    .detail-card h3 {
+      font-size: 1.15rem;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .detail-field { display: flex; flex-direction: column; gap: 4px; }
+    .detail-field.full-width { grid-column: 1 / -1; }
+    .detail-field label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .detail-field span {
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      min-height: 34px;
+    }
+    .detail-actions {
+      display: flex;
+      gap: 10px;
+      padding-top: 8px;
+    }
+
+    /* ── Modal ────────────────────────────────────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-header h3 {
+      font-size: 1.05rem;
+      color: var(--text-primary);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full-width { grid-column: 1 / -1; }
+    .form-group label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .form-group label .req { color: var(--danger); margin-left: 2px; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 9px 12px;
+      transition: border-color 0.15s;
+      outline: none;
+      width: 100%;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--accent); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group select option { background: var(--bg-raised); }
+    .form-group input.error,
+    .form-group select.error { border-color: var(--danger); }
+    .field-error {
+      font-size: 0.75rem;
+      color: var(--danger);
+      display: none;
+    }
+    .field-error.visible { display: block; }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── List toolbar (search + filters) ─────────────────────── */
+    .list-toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 220px;
+      padding: 8px 14px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .filter-btn:hover, .filter-btn.active { background: var(--bg-raised); color: var(--text-primary); border-color: var(--text-secondary); }
+    .filter-btn--danger.active  { background: rgba(248,81,73,0.15);  color: var(--danger);  border-color: rgba(248,81,73,0.5); }
+    .filter-btn--warning.active { background: rgba(210,153,34,0.15); color: var(--warning); border-color: rgba(210,153,34,0.5); }
+    .filter-btn--success.active { background: rgba(63,185,80,0.15);  color: var(--success); border-color: rgba(63,185,80,0.5); }
+
+    /* ── Calendar view ────────────────────────────────────────── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-top: 16px;
+    }
+    .cal-day-header {
+      text-align: center;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      padding: 8px 0;
+      font-weight: 600;
+    }
+    .cal-day {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      min-height: 80px;
+      padding: 6px;
+      font-size: 0.75rem;
+    }
+    .cal-day--empty { background: transparent; border-color: transparent; }
+    .cal-day--today { border-color: var(--accent); }
+    .cal-day__num { font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.8rem; }
+    .cal-day--today .cal-day__num { color: var(--accent); }
+    .cal-event {
+      display: block;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+    .cal-event--precaria  { background: rgba(63,185,80,0.2);  color: var(--success); }
+    .cal-event--urgent    { background: rgba(248,81,73,0.2);   color: var(--danger); }
+    .cal-event--warning   { background: rgba(210,153,34,0.2);  color: var(--warning); }
+    .cal-event--intimacion { background: rgba(167,139,250,0.2); color: #a78bfa; }
+
+    /* ── Kanban Board ────────────────────────────────────────── */
+    .kanban-board {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      min-height: 420px;
+      align-items: flex-start;
+    }
+    .kanban-col {
+      flex: 0 0 210px;
+      background: var(--bg-raised);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      max-height: 75vh;
+    }
+    .kanban-col__header {
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .kanban-col__count {
+      background: var(--bg-surface);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .kanban-col__cards {
+      padding: 8px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .kanban-card {
+      background: var(--bg-surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.1s;
+    }
+    .kanban-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .kanban-card__name { font-size: 0.81rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .kanban-card__nro  { font-size: 0.7rem; color: var(--text-secondary); font-family: monospace; margin-bottom: 6px; }
+    .kanban-card__footer { display: flex; justify-content: space-between; align-items: center; }
+    .kanban-sinmov { padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.67rem; }
+    .kanban-sinmov--ok   { background: rgba(63,185,80,0.12);  color: var(--success); }
+    .kanban-sinmov--med  { background: rgba(210,153,34,0.15); color: var(--warning); }
+    .kanban-sinmov--high { background: rgba(248,81,73,0.15);  color: var(--danger);  }
+
+    /* Kanban card enhancements */
+    .kanban-card__header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .kanban-card__dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .kanban-card__dot--red    { background: var(--danger);  box-shadow: 0 0 6px rgba(248,81,73,0.7); }
+    .kanban-card__dot--yellow { background: var(--warning); box-shadow: 0 0 4px rgba(210,153,34,0.5); }
+    .kanban-card__dot--green  { background: var(--success); }
+    .kanban-card__dot--none   { background: var(--border); }
+    .kanban-card__progress { height: 3px; background: var(--border); border-radius: 2px; margin: 7px 0 5px; overflow: hidden; }
+    .kanban-card__progress-fill { height: 100%; border-radius: 2px; }
+    .kanban-card__actions { display: flex; gap: 2px; margin-top: 4px; }
+    .kanban-quick-btn { background: none; border: 1px solid transparent; cursor: pointer; font-size: 0.78rem; padding: 2px 5px; border-radius: 4px; opacity: 0.55; transition: opacity 0.15s, background 0.15s, border-color 0.15s; }
+    .kanban-quick-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
+
+    /* Kanban layout with heatmap sidebar */
+    .kanban-layout { display: flex; gap: 16px; align-items: flex-start; }
+    .kanban-layout .kanban-board { flex: 1; min-width: 0; }
+    .heatmap-sidebar { flex: 0 0 220px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px; max-height: 75vh; overflow-y: auto; }
+    .heatmap-sidebar__title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 12px; }
+    .heatmap-item { padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: opacity 0.15s; }
+    .heatmap-item:last-child { border-bottom: none; }
+    .heatmap-item:hover { opacity: 0.8; }
+    .heatmap-item__name { font-size: 0.81rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .heatmap-item__nro  { font-size: 0.67rem; color: var(--text-secondary); font-family: monospace; margin-bottom: 4px; }
+    .heatmap-item__suggestion { font-size: 0.73rem; color: var(--warning); line-height: 1.35; margin-bottom: 4px; }
+    .heatmap-score-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .heatmap-score-fill { height: 100%; background: linear-gradient(90deg, var(--warning), var(--danger)); border-radius: 2px; transition: width 0.4s; }
+
+    /* Plazo Engine block (case detail) */
+    .plazo-engine-block { border-radius: 8px; padding: 14px 16px; border: 1px solid var(--border); background: var(--bg-raised); }
+    .plazo-engine-block--overdue { border-color: var(--danger);  background: rgba(248,81,73,0.07); }
+    .plazo-engine-block--warning { border-color: var(--warning); background: rgba(210,153,34,0.07); }
+    .plazo-engine-block--ok      { border-color: var(--success); background: rgba(63,185,80,0.07); }
+    .plazo-engine-block__label   { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .plazo-engine-block__days    { font-size: 1.25rem; font-weight: 700; margin: 4px 0; }
+    .plazo-engine-block__days--overdue { color: var(--danger); }
+    .plazo-engine-block__days--warning { color: var(--warning); }
+    .plazo-engine-block__days--ok      { color: var(--success); }
+    .plazo-engine-block__meta { font-size: 0.77rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .plazo-engine-block__suggestion { font-size: 0.8rem; color: var(--text-primary); background: var(--bg-surface); padding: 7px 10px; border-radius: 5px; border-left: 3px solid var(--danger); line-height: 1.4; }
+    .plazo-engine-block__trigger { font-size: 0.73rem; color: var(--text-secondary); margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .plazo-trigger-input { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); padding: 3px 8px; border-radius: 4px; font-size: 0.78rem; font-family: inherit; }
+    .plazo-trigger-input:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Tipo Acción Badge ───────────────────────────────────── */
+    .tipo-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .tipo-badge--amparo_mora         { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+    .tipo-badge--recurso_directo     { background: rgba(59,130,246,0.15);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .tipo-badge--inconstitucionalidad { background: rgba(201,168,76,0.15); color: var(--accent); border: 1px solid rgba(201,168,76,0.3); }
+    .tipo-badge--proceso_conocimiento { background: rgba(63,185,80,0.12);  color: var(--success); border: 1px solid rgba(63,185,80,0.3); }
+    .tipo-badge--otro                { background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border); }
+
+    /* ── Juzgado Notes ───────────────────────────────────────── */
+    .juzgado-note-card {
+      background: rgba(201,168,76,0.06);
+      border: 1px solid rgba(201,168,76,0.22);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .juzgado-note-card > label { color: var(--accent); font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; display: block; margin-bottom: 6px; }
+    .juzgado-note-card textarea {
+      width: 100%; box-sizing: border-box; background: transparent; border: none;
+      color: var(--text-primary); font-size: 0.84rem; resize: vertical;
+      min-height: 56px; outline: none; line-height: 1.5;
+    }
+
+    /* ── Snippets Modal ──────────────────────────────────────── */
+    #modal-snippets {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    #modal-snippets.open { display: flex; }
+    .snippets-box {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 14px; width: 720px; max-width: 95vw;
+      max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .snippets-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 15px 20px; border-bottom: 1px solid var(--border);
+    }
+    .snippets-header h3 { font-size: 0.97rem; color: var(--accent); }
+    .snippets-tabs {
+      display: flex; gap: 4px; padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto; flex-shrink: 0;
+    }
+    .snippets-tab {
+      padding: 5px 11px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); font-size: 0.76rem; cursor: pointer;
+      white-space: nowrap; transition: all 0.15s;
+    }
+    .snippets-tab.active, .snippets-tab:hover { background: var(--bg-surface); border-color: var(--accent); color: var(--accent); }
+    .snippets-body { flex: 1; overflow-y: auto; padding: 14px 20px; }
+    .snippet-desc { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 10px; font-style: italic; }
+    #snippet-output {
+      width: 100%; box-sizing: border-box; background: var(--bg-surface);
+      border: 1px solid var(--border); color: var(--text-primary);
+      font-family: 'Courier New', monospace; font-size: 0.82rem;
+      line-height: 1.65; padding: 14px; border-radius: 8px;
+      resize: vertical; min-height: 300px;
+    }
+    .snippets-footer {
+      padding: 11px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+
+    /* ── Notifications view ──────────────────────────────────── */
+    .notif-header-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .notif-header-row h2 { font-size: 1.15rem; color: var(--text-primary); }
+    .notif-group { margin-bottom: 28px; }
+    .notif-group__title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.2px; color: var(--text-secondary);
+      margin-bottom: 10px; padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .notif-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      transition: border-color 0.15s;
+    }
+    .notif-card:hover { border-color: var(--accent); }
+    .notif-card--urgent  { border-left: 3px solid var(--danger);  }
+    .notif-card--watch   { border-left: 3px solid var(--warning); }
+    .notif-card--actuacion { border-left: 3px solid var(--accent); }
+    .notif-card--closed  { border-left: 3px solid var(--text-secondary); }
+    .notif-card__icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .notif-card__body { flex: 1; min-width: 0; }
+    .notif-card__top {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 4px; flex-wrap: wrap;
+    }
+    .notif-card__name { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+    .notif-card__nro  { font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); }
+    .notif-card__time { font-size: 0.72rem; color: var(--text-secondary); margin-left: auto; white-space: nowrap; }
+    .notif-card__msg  { font-size: 0.85rem; color: var(--text-primary); line-height: 1.5; }
+    .notif-dismiss {
+      background: none; border: none; color: var(--text-secondary);
+      font-size: 1.1rem; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+      transition: color 0.15s, background 0.15s; flex-shrink: 0; align-self: flex-start;
+    }
+    .notif-dismiss:hover { color: var(--danger); background: rgba(248,81,73,0.1); }
+    .notif-empty {
+      text-align: center; padding: 60px 24px; color: var(--text-secondary);
+    }
+    .notif-empty__icon { font-size: 3rem; margin-bottom: 12px; }
+    .notif-empty__text { font-size: 0.95rem; }
+    /* Bell badge in header */
+    .notif-bell-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-secondary); font-size: 1.1rem;
+      padding: 4px 8px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+      position: relative; display: inline-flex; align-items: center;
+    }
+    .notif-bell-btn:hover { color: var(--accent); background: var(--bg-hover); }
+    .notif-bell-badge {
+      position: absolute; top: -2px; right: -2px;
+      background: var(--danger); color: #fff;
+      font-size: 0.6rem; font-weight: 700;
+      min-width: 16px; height: 16px;
+      border-radius: 8px; padding: 0 4px;
+      display: flex; align-items: center; justify-content: center;
+      display: none;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .page-body { padding: 20px 16px; }
+      .panel-grid { grid-template-columns: 1fr; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full-width { grid-column: 1; }
+      .detail-field.full-width { grid-column: 1; }
+      .app-header { padding: 14px 16px; }
+      .app-header h1 { font-size: 1.05rem; letter-spacing: 2px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ GLOBAL HEADER (único, sticky) ═══════════════════════ -->
+<div class="app-header">
+  <h1>⚖ NegroLex</h1>
+  <span class="subtitle" id="header-context">Panel de Control</span>
+  <button class="notif-bell-btn" id="notif-bell-btn" title="Notificaciones">
+    🔔
+    <span class="notif-bell-badge" id="notif-bell-badge"></span>
+  </button>
+  <span class="sync-info" id="sync-info"></span>
+</div>
+
+<!-- ═══ TOAST ════════════════════════════════════════════════ -->
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NOTIFICATIONS VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="view-notifications" class="view">
+  <div class="page-body">
+    <div class="notif-header-row">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="back-btn" id="notif-back-btn">← Volver al panel</button>
+        <h2>Notificaciones</h2>
+      </div>
+      <button class="btn btn--secondary" id="notif-clear-all-btn">Limpiar todo</button>
+    </div>
+    <div id="notif-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     DASHBOARD VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="view-dashboard" class="view active">
+  <div class="page-body">
+    <div id="urgency-banner" class="urgency-banner">
+      <div class="urgency-banner__title">⚡ Requieren atención hoy</div>
+      <div class="urgency-banner__items" id="urgency-banner-items"></div>
+    </div>
+    <div class="dashboard-intro">
+      <h2>Panel de Control</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn--secondary" id="open-calendar-btn">📅 Calendario</button>
+      </div>
+    </div>
+    <div class="panel-grid">
+
+      <div class="panel-card" data-category="citizenship">
+        <div class="panel-card__icon">🏛</div>
+        <div class="panel-card__title">Ciudadanía</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value stat-link" id="stat-citizenship-active" onclick="openCaseList('citizenship')">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value stat-link" id="stat-citizenship-pending" onclick="openCaseList('citizenship')">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Próximos vencimientos</span>
+            <span class="panel-stat__value stat-link" id="stat-citizenship-upcoming" onclick="openCaseListFiltered('citizenship','vencer')">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" data-category="migration">
+        <div class="panel-card__icon">✈</div>
+        <div class="panel-card__title">Migraciones / Residencias</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value stat-link" id="stat-migration-active" onclick="openCaseList('migration')">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value stat-link" id="stat-migration-pending" onclick="openCaseList('migration')">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Próximos vencimientos</span>
+            <span class="panel-stat__value stat-link" id="stat-migration-upcoming" onclick="openCaseListFiltered('migration','vencer')">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" data-category="family">
+        <div class="panel-card__icon">👨‍👩‍👧</div>
+        <div class="panel-card__title">Derecho de Familia</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value stat-link" id="stat-family-active" onclick="openCaseList('family')">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value stat-link" id="stat-family-pending" onclick="openCaseList('family')">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Próximos vencimientos</span>
+            <span class="panel-stat__value stat-link" id="stat-family-upcoming" onclick="openCaseListFiltered('family','vencer')">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" data-category="contencioso">
+        <div class="panel-card__icon">⚖️</div>
+        <div class="panel-card__title">Contencioso Administrativo</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value stat-link" id="stat-contencioso-active" onclick="openContencioso()">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value stat-link" id="stat-contencioso-pending" onclick="openContencioso()">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Próximos vencimientos</span>
+            <span class="panel-stat__value stat-link" id="stat-contencioso-upcoming" onclick="openContencioso()">0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CASE LIST VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="view-case-list" class="view">
+  <div class="page-body">
+    <div class="view-header">
+      <div class="view-header-left">
+        <button class="back-btn" id="list-back-btn">← Volver al panel</button>
+        <h2 id="list-heading">Casos</h2>
+        <span class="category-badge" id="list-badge"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn--secondary" id="kanban-toggle-btn" style="display:none;">📋 Kanban</button>
+        <button class="btn btn--secondary" id="export-btn">🖨️ Exportar</button>
+        <button class="btn btn--primary" id="new-case-btn">+ Nuevo Caso</button>
+      </div>
+    </div>
+    <div class="list-toolbar">
+      <input type="text" id="case-search" placeholder="Buscar por nombre o expediente..." class="search-input" />
+      <div class="filter-btns">
+        <button class="filter-btn active" data-filter="all">Todos</button>
+        <button class="filter-btn filter-btn--danger" data-filter="intimados">Intimados</button>
+        <button class="filter-btn filter-btn--warning" data-filter="vencer">Por vencer (10 días)</button>
+        <button class="filter-btn filter-btn--success" data-filter="resueltos">Resueltos</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="case-table">
+        <thead id="case-thead">
+          <tr>
+            <th>Cliente</th>
+            <th>Expediente</th>
+            <th>Estado trámite</th>
+            <th>Estado</th>
+            <th>Venc. Precaria</th>
+            <th>Intimación</th>
+          </tr>
+        </thead>
+        <tbody id="case-tbody"></tbody>
+      </table>
+      <div id="list-empty" class="empty-state" style="display:none;">
+        <p>Sin casos en esta categoría todavía.</p>
+        <button class="btn btn--primary" id="new-case-empty-btn">+ Agregar primer caso</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CASE DETAIL VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="view-case-detail" class="view">
+  <div class="page-body">
+    <div class="view-header">
+      <div class="view-header-left">
+        <button class="back-btn" id="detail-back-btn">← Volver</button>
+        <h2 id="detail-heading">Detalle del caso</h2>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn--secondary" id="snippets-btn" style="display:none;">✍ Escritos</button>
+        <a class="btn btn--secondary" id="pjn-link-btn" href="#" target="_blank" style="display:none;text-decoration:none;">🔗 Ver en PJN</a>
+        <button class="btn btn--secondary" id="edit-case-btn">Editar</button>
+        <button class="btn btn--danger" id="delete-case-btn">Eliminar</button>
+      </div>
+    </div>
+    <div class="detail-card">
+      <h3 id="detail-case-title">—</h3>
+      <div id="detail-possibly-closed-alert" class="possibly-closed-alert" style="display:none;"></div>
+      <div class="detail-grid">
+        <div class="detail-field">
+          <label>Cliente</label>
+          <span id="detail-client-name">—</span>
+        </div>
+        <div class="detail-field">
+          <label>Expediente</label>
+          <span id="detail-case-number">—</span>
+        </div>
+        <div class="detail-field">
+          <label>Categoría</label>
+          <span id="detail-category">—</span>
+        </div>
+        <div class="detail-field">
+          <label>Estado</label>
+          <span id="detail-status">—</span>
+        </div>
+        <div class="detail-field">
+          <label>Estado del trámite</label>
+          <span id="detail-procedural-stage">—</span>
+        </div>
+        <div class="detail-field" id="detail-tipo-accion-field" style="display:none;">
+          <label>Tipo de acción</label>
+          <span id="detail-tipo-accion">—</span>
+        </div>
+        <div class="detail-field" id="detail-tribunal-field">
+          <label>Tribunal / Juzgado</label>
+          <span id="detail-tribunal">—</span>
+        </div>
+        <div class="detail-field" id="detail-last-action-field">
+          <label>Última actuación</label>
+          <span id="detail-last-action">—</span>
+        </div>
+        <div class="detail-field" id="detail-dias-mov-field" style="display:none;">
+          <label>Días sin movimiento</label>
+          <span id="detail-dias-mov">—</span>
+        </div>
+        <div id="detail-precaria-block" class="precaria-block precaria-block--none">
+          <div class="precaria-block__icon">📅</div>
+          <div>
+            <div class="precaria-block__label">Vencimiento Precaria</div>
+            <div class="precaria-block__date" id="detail-next-deadline">—</div>
+            <div class="precaria-block__days" id="detail-precaria-days"></div>
+          </div>
+        </div>
+        <div class="detail-field" id="detail-const-deadline-field" style="display:none;">
+          <label>Próxima fecha clave</label>
+          <span id="detail-const-deadline">—</span>
+        </div>
+        <div class="detail-field full-width" id="detail-plazo-section" style="display:none;">
+          <label>⏱ Plazo Engine</label>
+          <div id="detail-plazo-block"></div>
+        </div>
+        <div class="detail-field">
+          <label>Última actualización</label>
+          <span id="detail-last-updated">—</span>
+        </div>
+        <div class="detail-field full-width">
+          <label>Notas</label>
+          <span id="detail-notes" style="white-space:pre-wrap;">—</span>
+        </div>
+        <div class="detail-field full-width" id="detail-juzgado-note-section" style="display:none;">
+          <div class="juzgado-note-card">
+            <label id="detail-juzgado-note-label">📌 Nota del juzgado</label>
+            <textarea id="detail-juzgado-note-input" placeholder="Escribí acá lo que sabés de este juzgado..."></textarea>
+          </div>
+        </div>
+        <div class="detail-field full-width" id="detail-documento-section" style="display:none;">
+          <label>Precaria / Intimación / Disposición</label>
+          <a id="detail-documento-link" href="#" target="_blank" class="btn btn--secondary" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+            📄 Ver documento
+          </a>
+        </div>
+        <div class="detail-field full-width" id="detail-intimaciones-section" style="display:none;">
+          <label>Intimaciones de Migraciones</label>
+          <div id="detail-intimaciones-list"></div>
+        </div>
+        <div class="detail-field full-width" id="detail-suggestion-section" style="display:none;">
+          <label>Sugerencia</label>
+          <div id="detail-suggestion-text" class="suggestion-card">—</div>
+        </div>
+        <div class="detail-field full-width" id="detail-ia-section" style="display:none;">
+          <label>✨ Análisis del expediente</label>
+          <div class="ia-card">
+            <div class="ia-card__header">Generado por IA · última verificación PJN</div>
+            <div id="detail-ia-text">—</div>
+          </div>
+        </div>
+        <div class="detail-field full-width" id="detail-actuaciones-section" style="display:none;">
+          <label>Últimas actuaciones</label>
+          <div id="detail-actuaciones-list" class="act-timeline"></div>
+        </div>
+        <div class="detail-field full-width" id="detail-history-section" style="display:none;">
+          <label>Historial de cambios</label>
+          <div id="detail-history-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CALENDAR VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="view-calendar" class="view">
+  <div class="page-body">
+    <div class="view-header">
+      <div class="view-header-left">
+        <button class="back-btn" id="cal-back-btn">← Volver al panel</button>
+        <h2>Calendario de Vencimientos</h2>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn--secondary" id="cal-prev">‹</button>
+        <span id="cal-month-label" style="font-weight:600;min-width:140px;text-align:center;"></span>
+        <button class="btn btn--secondary" id="cal-next">›</button>
+      </div>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+    <div id="cal-legend" style="display:flex;gap:16px;margin-top:16px;font-size:0.78rem;color:var(--text-secondary);">
+      <span><span style="color:var(--danger);">●</span> Vencida/Urgente</span>
+      <span><span style="color:var(--warning);">●</span> Por vencer</span>
+      <span><span style="color:var(--success);">●</span> OK</span>
+      <span><span style="color:#a78bfa;">●</span> Intimación</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CONTENCIOSO SUB-DASHBOARD
+═══════════════════════════════════════════════════════════ -->
+<div id="view-contencioso" class="view">
+  <div class="page-body">
+    <div class="view-header">
+      <div class="view-header-left">
+        <button class="back-btn" id="cont-back-btn">← Volver al panel</button>
+        <h2>Contencioso Administrativo</h2>
+      </div>
+      <button class="btn btn--secondary" id="cont-kanban-btn">📋 Kanban general</button>
+    </div>
+    <div class="panel-grid">
+
+      <div class="panel-card" data-subtipo="inconstitucionalidad">
+        <div class="panel-card__icon">📜</div>
+        <div class="panel-card__title">Inconstitucionalidades</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value" id="stat-inconst-active">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value" id="stat-inconst-pending">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Sin movimiento +90d</span>
+            <span class="panel-stat__value" id="stat-inconst-stalled">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" data-subtipo="amparo_mora">
+        <div class="panel-card__icon">🛡️</div>
+        <div class="panel-card__title">Amparo por Mora DNM</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value" id="stat-amparo-active">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value" id="stat-amparo-pending">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Sin movimiento +90d</span>
+            <span class="panel-stat__value" id="stat-amparo-stalled">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" data-subtipo="recurso_directo">
+        <div class="panel-card__icon">📁</div>
+        <div class="panel-card__title">Recurso Directo DNM</div>
+        <div class="panel-card__stats">
+          <div class="panel-stat">
+            <span class="panel-stat__label">Casos activos</span>
+            <span class="panel-stat__value" id="stat-recurso-active">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Pendientes</span>
+            <span class="panel-stat__value" id="stat-recurso-pending">0</span>
+          </div>
+          <div class="panel-stat">
+            <span class="panel-stat__label">Sin movimiento +90d</span>
+            <span class="panel-stat__value" id="stat-recurso-stalled">0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     KANBAN VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="view-kanban" class="view">
+  <div class="page-body">
+    <div class="view-header">
+      <div class="view-header-left">
+        <button class="back-btn" id="kanban-back-btn">← Ver lista</button>
+        <h2 id="kanban-heading">Kanban</h2>
+      </div>
+    </div>
+    <div class="kanban-layout">
+      <div id="kanban-board" class="kanban-board"></div>
+      <div id="kanban-heatmap" class="heatmap-sidebar"><div style="color:var(--text-secondary);font-size:0.8rem;">Cargando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — NEW / EDIT CASE
+═══════════════════════════════════════════════════════════ -->
+<div id="modal-overlay">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <h3 id="modal-title">Nuevo caso</h3>
+      <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
+    </div>
+    <div class="form-grid">
+
+      <div class="form-group full-width">
+        <label for="f-category">Categoría <span class="req">*</span></label>
+        <select id="f-category">
+          <option value="">— Seleccioná una categoría —</option>
+          <option value="citizenship">Ciudadanía</option>
+          <option value="migration">Migraciones / Residencias</option>
+          <option value="family">Derecho de Familia</option>
+          <option value="constitutional">Inconstitucionalidades</option>
+          <option value="amparo">Amparo por Mora DNM</option>
+        </select>
+        <span class="field-error" id="err-category">Seleccioná una categoría.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="f-client-name">Nombre del cliente <span class="req">*</span></label>
+        <input type="text" id="f-client-name" placeholder="Full name" />
+        <span class="field-error" id="err-client-name">El nombre es requerido.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="f-case-number">N° de expediente <span class="req">*</span></label>
+        <input type="text" id="f-case-number" placeholder="e.g. 2024-CV-00123" />
+        <span class="field-error" id="err-case-number">El número de expediente es requerido.</span>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="f-case-title">Título del caso <span class="req">*</span></label>
+        <input type="text" id="f-case-title" placeholder="Brief descriptive title" />
+        <span class="field-error" id="err-case-title">El título es requerido.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="f-procedural-stage">Estado del trámite <span class="req">*</span></label>
+        <input type="text" id="f-procedural-stage" placeholder="e.g. Initial Filing" />
+        <span class="field-error" id="err-procedural-stage">El estado del trámite es requerido.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="f-status">Estado <span class="req">*</span></label>
+        <select id="f-status">
+          <option value="active">Active</option>
+          <option value="pending">Pending Action</option>
+          <option value="closed">Closed</option>
+          <option value="won">Sentencia favorable</option>
+          <option value="lost">Sentencia desfavorable</option>
+          <option value="appealed">En apelación</option>
+          <option value="desisted">Desistido</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="f-next-deadline">Próxima fecha clave <span class="req">*</span></label>
+        <input type="date" id="f-next-deadline" />
+        <span class="field-error" id="err-next-deadline">La fecha es requerida.</span>
+      </div>
+
+      <div class="form-group" id="fg-plazo-trigger" style="display:none;">
+        <label for="f-plazo-trigger">Fecha traslado / pronto despacho</label>
+        <input type="date" id="f-plazo-trigger" />
+        <small style="color:var(--text-secondary);font-size:0.75rem;">Recurso Directo: 5d hábiles · Amparo por Mora: 15d hábiles · Inconstitucionalidad: 30d hábiles</small>
+      </div>
+
+      <div class="form-group" id="fg-tribunal">
+        <label for="f-tribunal">Tribunal / Juzgado</label>
+        <input type="text" id="f-tribunal" placeholder="Ej: Cámara Federal Sala I" />
+      </div>
+      <div class="form-group" id="fg-last-action">
+        <label for="f-last-action">Última actuación</label>
+        <input type="text" id="f-last-action" placeholder="Ej: Contestación de demanda 10/03/2025" />
+      </div>
+
+      <div class="form-group full-width">
+        <label for="f-notes">Notas</label>
+        <textarea id="f-notes" placeholder="Optional notes, references, or observations…"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn--secondary" id="modal-cancel-btn">Cancelar</button>
+      <button class="btn btn--primary" id="modal-save-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — ESCRITOS / SNIPPETS
+═══════════════════════════════════════════════════════════ -->
+<div id="modal-snippets">
+  <div class="snippets-box">
+    <div class="snippets-header">
+      <h3>✍ Generador de Escritos</h3>
+      <button class="modal-close" id="snippets-close-btn">&times;</button>
+    </div>
+    <div class="snippets-tabs" id="snippet-tabs"></div>
+    <div class="snippets-body">
+      <div class="snippet-desc" id="snippet-desc"></div>
+      <textarea id="snippet-output" spellcheck="false"></textarea>
+    </div>
+    <div class="snippets-footer">
+      <button class="btn btn--secondary" id="snippets-close-btn2">Cerrar</button>
+      <button class="btn btn--primary" id="snippet-copy-btn">📋 Copiar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Constants ─────────────────────────────────────────────
+  const CATEGORIES = {
+    citizenship:    'Ciudadanía',
+    migration:      'Migraciones / Residencias',
+    family:         'Derecho de Familia',
+    contencioso:    'Contencioso Administrativo',
+    constitutional: 'Inconstitucionalidades',
+    amparo:         'Amparo por Mora DNM'
+  };
+
+  // ── State ──────────────────────────────────────────────────
+  let cases = [];
+  let currentCategory = null;
+  let currentCaseId   = null;
+  let activeFilter    = 'all';
+  let currentSubTipo  = null; // 'inconstitucionalidad' | 'amparo_mora' | 'recurso_directo' | null
+
+  // ── Storage ────────────────────────────────────────────────
+  const USE_SERVER = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+  async function loadCases() {
+    if (USE_SERVER) {
+      try {
+        const r = await fetch('/cases');
+        cases = await r.json();
+        _lastSync = Date.now();
+        updateSyncInfo();
+        return;
+      } catch(e) {}
+    }
+    try { cases = JSON.parse(localStorage.getItem('lawcases') || '[]'); }
+    catch(e) { cases = []; }
+  }
+
+  function saveCases() {
+    if (USE_SERVER) {
+      fetch('/cases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cases)
+      }).catch(() => {});
+    }
+    localStorage.setItem('lawcases', JSON.stringify(cases));
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  // ── Toast ──────────────────────────────────────────────────
+  let _toastTimer = null;
+  function showToast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast toast--${type} show`;
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+  }
+
+  // ── Urgency banner ─────────────────────────────────────────
+  function renderUrgencyBanner() {
+    const items = [];
+
+    // Plazos vencidos (Plazo Engine)
+    const overdue = cases.filter(c => {
+      const p = computePlazo(c);
+      return p && p.isOverdue;
+    });
+    if (overdue.length > 0) {
+      overdue.slice(0, 3).forEach(c => {
+        const p = computePlazo(c);
+        items.push({ text: `⚡ ${c.clientName} — ${p.suggestion}`, id: c.id });
+      });
+    }
+
+    // Precarias que vencen en ≤ 3 días
+    const precarias = cases.filter(c => c.category === 'migration' && c.nextDeadline && daysUntil(c.nextDeadline) <= 3 && daysUntil(c.nextDeadline) >= 0);
+    precarias.forEach(c => {
+      const d = daysUntil(c.nextDeadline);
+      const txt = d === 0 ? '¡vence hoy!' : `vence en ${d}d`;
+      items.push({ text: `📅 ${c.clientName} — precaria ${txt}`, id: c.id });
+    });
+
+    // Casos posiblemente cerrados (sin alertar dos veces)
+    const closed = cases.filter(c => c.possibleClosed && (c.category === 'constitutional' || c.category === 'amparo'));
+    if (closed.length > 0) {
+      items.push({ text: `⚠ ${closed.length} caso${closed.length > 1 ? 's' : ''} posiblemente cerrado${closed.length > 1 ? 's' : ''} — revisar en PJN`, id: null, action: () => openContencioso() });
+    }
+
+    const banner = document.getElementById('urgency-banner');
+    const list   = document.getElementById('urgency-banner-items');
+    if (items.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = '';
+    list.innerHTML = items.map(item =>
+      `<div class="urgency-banner__item" onclick="${item.id ? `openCaseDetail('${esc(item.id)}');showView('view-case-detail')` : (item.action ? 'openContencioso()' : '')}">${esc(item.text)}</div>`
+    ).join('');
+  }
+
+  // ── Open case list with active filter ─────────────────────
+  function openCaseListFiltered(cat, filter) {
+    openCaseList(cat);
+    activeFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === filter);
+    });
+    renderCaseList(cat);
+  }
+
+  // ── Last sync ──────────────────────────────────────────────
+  let _lastSync = null;
+  function updateSyncInfo() {
+    if (!_lastSync) return;
+    const secs = Math.round((Date.now() - _lastSync) / 1000);
+    const el = document.getElementById('sync-info');
+    if (!el) return;
+    if (secs < 60)      el.textContent = `Actualizado hace ${secs}s`;
+    else if (secs < 3600) el.textContent = `Actualizado hace ${Math.round(secs/60)}m`;
+    else                 el.textContent = `Actualizado hace ${Math.round(secs/3600)}h`;
+  }
+
+  // ── Date helpers ───────────────────────────────────────────
+  function daysSince(ddmmyyyy) {
+    // Acepta DD/MM/YYYY (PJN) o YYYY-MM-DD
+    if (!ddmmyyyy) return null;
+    let iso;
+    const m = ddmmyyyy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) iso = `${m[3]}-${m[2]}-${m[1]}`;
+    else    iso = ddmmyyyy;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(iso + 'T00:00:00');
+    return Math.round((today - d) / 86400000);
+  }
+
+  function daysUntil(isoDate) {
+    if (!isoDate) return Infinity;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const target = new Date(isoDate + 'T00:00:00');
+    return Math.round((target - today) / 86400000);
+  }
+
+  function isUpcoming(isoDate) {
+    const d = daysUntil(isoDate);
+    return d >= 0 && d <= 10;
+  }
+
+  function deadlineLevel(days) {
+    if (days === Infinity) return 'none';
+    if (days < 0)   return 'overdue';
+    if (days <= 3)  return 'urgent';
+    if (days <= 10) return 'soon';
+    return 'ok';
+  }
+
+  function intimacionBadgeHTML(intimaciones) {
+    if (!intimaciones || intimaciones.length === 0) return '<span style="color:var(--text-secondary);font-size:0.8rem;">—</span>';
+    // Show the most urgent one
+    const sorted = [...intimaciones].sort((a, b) => daysUntil(a.vencimiento) - daysUntil(b.vencimiento));
+    const it     = sorted[0];
+    const days   = daysUntil(it.vencimiento);
+    const level  = deadlineLevel(days);
+    let label;
+    if (level === 'overdue') label = `Vencida hace ${Math.abs(days)}d`;
+    else if (days === 0)     label = '¡Vence hoy!';
+    else                     label = `${days} días`;
+    return `<span class="deadline-badge deadline-badge--${level}">
+      <span>${label}</span>
+      <span class="db-date">Vence ${formatDate(it.vencimiento)}</span>
+    </span>`;
+  }
+
+  function deadlineBadgeHTML(isoDate) {
+    const days  = daysUntil(isoDate);
+    const level = deadlineLevel(days);
+    if (level === 'none') return `<span class="deadline-badge deadline-badge--none">Sin fecha</span>`;
+
+    const dateStr = formatDate(isoDate);
+    let label;
+    if (level === 'overdue') label = `VENCIDA hace ${Math.abs(days)}d`;
+    else if (days === 0)     label = 'Vence HOY';
+    else                     label = `${days} días`;
+
+    return `<span class="deadline-badge deadline-badge--${level}">
+      <span>${label}</span>
+      <span class="db-date">${dateStr}</span>
+    </span>`;
+  }
+
+  function formatDate(isoDate) {
+    if (!isoDate) return '—';
+    const d = new Date(isoDate + 'T00:00:00');
+    return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function formatDateTime(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ── Count helpers ──────────────────────────────────────────
+  function getCasesByCategory(cat) {
+    return cases.filter(c => c.category === cat);
+  }
+
+  function countActive(cat) {
+    return cases.filter(c => c.category === cat && c.status === 'active').length;
+  }
+
+  function countPending(cat) {
+    return cases.filter(c => c.category === cat && c.status === 'pending').length;
+  }
+
+  function countUpcoming(cat) {
+    return cases.filter(c =>
+      c.category === cat && c.status !== 'closed' && isUpcoming(c.nextDeadline)
+    ).length;
+  }
+
+  // ── View switcher ──────────────────────────────────────────
+  const SUB_LABELS = {
+    inconstitucionalidad: 'Inconstitucionalidades',
+    amparo_mora:          'Amparo por Mora DNM',
+    recurso_directo:      'Recurso Directo DNM',
+  };
+
+  const VIEW_LABELS = {
+    'view-notifications':'Notificaciones',
+    'view-dashboard':    'Panel de Control',
+    'view-case-list':    () => (currentSubTipo ? SUB_LABELS[currentSubTipo] : CATEGORIES[currentCategory]) || 'Casos',
+    'view-case-detail':  () => (currentSubTipo ? SUB_LABELS[currentSubTipo] : CATEGORIES[currentCategory]) || 'Detalle del caso',
+    'view-contencioso':  'Contencioso Administrativo',
+    'view-kanban':       'Vista Kanban',
+    'view-calendar':     'Calendario',
+  };
+
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const lbl = VIEW_LABELS[id];
+    const text = typeof lbl === 'function' ? lbl() : (lbl || '');
+    document.getElementById('header-context').textContent = text;
+    document.title = `NegroLex — ${text}`;
+  }
+
+  // ── Helpers contencioso ────────────────────────────────────
+  function getContenciosoCases(tipo) {
+    const all = cases.filter(c => c.category === 'constitutional' || c.category === 'amparo');
+    if (tipo === 'amparo_mora')          return all.filter(c => c.category === 'amparo');
+    if (tipo === 'recurso_directo')      return all.filter(c => c.category === 'constitutional' && detectTipoAccion(c) === 'recurso_directo');
+    if (tipo === 'inconstitucionalidad') return all.filter(c => c.category === 'constitutional' && detectTipoAccion(c) !== 'recurso_directo');
+    return all;
+  }
+
+  // ── Render dashboard ───────────────────────────────────────
+  function renderDashboard() {
+    ['citizenship','migration','family','contencioso'].forEach(cat => {
+      let active, pending, upcoming;
+      if (cat === 'contencioso') {
+        const all = cases.filter(c => c.category === 'constitutional' || c.category === 'amparo');
+        active   = all.filter(c => c.status === 'active').length;
+        pending  = all.filter(c => c.status === 'pending').length;
+        upcoming = all.filter(c => c.status !== 'closed' && isUpcoming(c.nextDeadline)).length;
+      } else {
+        active   = countActive(cat);
+        pending  = countPending(cat);
+        upcoming = countUpcoming(cat);
+      }
+      const elA = document.getElementById(`stat-${cat}-active`);
+      const elP = document.getElementById(`stat-${cat}-pending`);
+      const elU = document.getElementById(`stat-${cat}-upcoming`);
+      if (!elA) return;
+      elA.textContent = active;   elA.className = 'panel-stat__value stat-link';
+      elP.textContent = pending;  elP.className = 'panel-stat__value stat-link' + (pending  > 0 ? ' has-warning' : '');
+      elU.textContent = upcoming; elU.className = 'panel-stat__value stat-link' + (upcoming > 0 ? ' has-danger'  : '');
+    });
+    renderUrgencyBanner();
+  }
+
+  // ── Render contencioso sub-dashboard ───────────────────────
+  function renderContencioso() {
+    const tipos = ['inconstitucionalidad','amparo_mora','recurso_directo'];
+    const ids   = { inconstitucionalidad: 'inconst', amparo_mora: 'amparo', recurso_directo: 'recurso' };
+    tipos.forEach(tipo => {
+      const list    = getContenciosoCases(tipo);
+      const prefix  = ids[tipo];
+      const active  = list.filter(c => c.status === 'active').length;
+      const pending = list.filter(c => c.status === 'pending').length;
+      const stalled = list.filter(c => { const d = daysSince(c.lastActionDate); return d !== null && d >= 90; }).length;
+      const setEl = (id, val, cls) => { const el = document.getElementById(id); if (el) { el.textContent = val; el.className = 'panel-stat__value' + (cls ? ` ${cls}` : ''); } };
+      setEl(`stat-${prefix}-active`,  active,  '');
+      setEl(`stat-${prefix}-pending`, pending, pending  > 0 ? 'has-warning' : '');
+      setEl(`stat-${prefix}-stalled`, stalled, stalled  > 0 ? 'has-danger'  : '');
+    });
+  }
+
+  function openContencioso() {
+    currentSubTipo = null;
+    renderContencioso();
+    showView('view-contencioso');
+  }
+
+  // ── Open sub-category case list (from contencioso sub-dashboard) ──
+  function openSubCaseList(tipo) {
+    const labels = {
+      inconstitucionalidad: 'Inconstitucionalidades',
+      amparo_mora:          'Amparo por Mora DNM',
+      recurso_directo:      'Recurso Directo DNM',
+    };
+    currentSubTipo  = tipo;
+    currentCategory = tipo === 'amparo_mora' ? 'amparo' : 'constitutional';
+    document.getElementById('list-heading').textContent = labels[tipo] || tipo;
+    document.getElementById('list-badge').textContent   = '';
+    document.getElementById('list-back-btn').textContent = '← Contencioso';
+    const kb = document.getElementById('kanban-toggle-btn');
+    if (kb) kb.style.display = '';
+    activeFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+    if (allBtn) allBtn.classList.add('active');
+    const searchEl = document.getElementById('case-search');
+    if (searchEl) searchEl.value = '';
+    renderCaseList(currentCategory);
+    showView('view-case-list');
+  }
+
+  // ── Open case list ─────────────────────────────────────────
+  function openCaseList(cat) {
+    currentSubTipo  = null;
+    currentCategory = cat;
+    document.getElementById('list-back-btn').textContent = '← Volver al panel';
+    const kb = document.getElementById('kanban-toggle-btn');
+    if (kb) kb.style.display = (cat === 'constitutional' || cat === 'amparo') ? '' : 'none';
+    document.getElementById('list-heading').textContent = CATEGORIES[cat];
+    document.getElementById('list-badge').textContent = CATEGORIES[cat];
+    activeFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+    if (allBtn) allBtn.classList.add('active');
+    const searchEl = document.getElementById('case-search');
+    if (searchEl) searchEl.value = '';
+    renderCaseList(cat);
+    showView('view-case-list');
+  }
+
+  function sortCases(list) {
+    // Casos constitucionales/amparo: ordenar por días sin movimiento (más tiempo primero)
+    if (list.length > 0 && (list[0].category === 'constitutional' || list[0].category === 'amparo')) {
+      return list.slice().sort((a, b) => {
+        const dA = daysSince(a.lastActionDate);
+        const dB = daysSince(b.lastActionDate);
+        if (dA === null && dB === null) return 0;
+        if (dA === null) return 1;
+        if (dB === null) return -1;
+        return dB - dA;
+      });
+    }
+
+    return list.slice().sort((a, b) => {
+      const aHasInt = a.intimaciones && a.intimaciones.length > 0;
+      const bHasInt = b.intimaciones && b.intimaciones.length > 0;
+
+      // 1. Cases with intimaciones come first
+      if (aHasInt && !bHasInt) return -1;
+      if (!aHasInt && bHasInt) return 1;
+
+      if (aHasInt && bHasInt) {
+        // Both have intimaciones → sort by closest intimación vencimiento
+        const aMin = Math.min(...a.intimaciones.map(it => daysUntil(it.vencimiento)));
+        const bMin = Math.min(...b.intimaciones.map(it => daysUntil(it.vencimiento)));
+        return aMin - bMin;
+      }
+
+      // Neither has intimaciones → sort by precaria vencimiento
+      return daysUntil(a.nextDeadline) - daysUntil(b.nextDeadline);
+    });
+  }
+
+  function renderCaseList(cat) {
+    const tbody  = document.getElementById('case-tbody');
+    const thead  = document.getElementById('case-thead');
+    const empty  = document.getElementById('list-empty');
+    const isConst = cat === 'constitutional' || cat === 'amparo';
+    const searchVal = (document.getElementById('case-search')?.value || '').toLowerCase();
+    let filtered = sortCases(currentSubTipo ? getContenciosoCases(currentSubTipo) : getCasesByCategory(cat));
+    if (activeFilter === 'intimados') filtered = filtered.filter(c => c.intimaciones && c.intimaciones.length > 0);
+    else if (activeFilter === 'vencer')    filtered = filtered.filter(c => { const d = daysUntil(c.nextDeadline); return d >= 0 && d <= 10; });
+    else if (activeFilter === 'resueltos') filtered = filtered.filter(c => /resuelto/i.test(c.rawEstado || ''));
+    if (searchVal) filtered = filtered.filter(c =>
+      (c.clientName || '').toLowerCase().includes(searchVal) ||
+      (c.caseNumber || '').toLowerCase().includes(searchVal)
+    );
+    tbody.innerHTML = '';
+
+    // Encabezados dinámicos según categoría
+    if (isConst) {
+      thead.innerHTML = `<tr>
+        <th>Sin movimiento</th>
+        <th>Cliente</th>
+        <th>Expediente</th>
+        <th>Tribunal</th>
+        <th>Estado PJN</th>
+        <th>Última actuación</th>
+      </tr>`;
+    } else {
+      thead.innerHTML = `<tr>
+        <th>Cliente</th>
+        <th>Expediente</th>
+        <th>Estado trámite</th>
+        <th>Estado</th>
+        <th>Venc. Precaria</th>
+        <th>Intimación</th>
+      </tr>`;
+    }
+
+    if (filtered.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    filtered.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = c.id;
+
+      if (isConst) {
+        // ── Fila constitucional ──────────────────────────────────
+        const estadoPJN = c.proceduralStage || '—';
+        const esSentencia = /sentencia/i.test(estadoPJN);
+        const esDespacho  = /despacho/i.test(estadoPJN);
+        const pjnCls = esSentencia ? 'sentencia' : esDespacho ? 'despacho' : '';
+
+        // Última actuación: fecha arriba, descripción abajo
+        let ultimaHtml = '—';
+        if (c.lastAction || c.lastActionDate) {
+          let desc = '';
+          if (c.lastAction) {
+            const raw = c.lastAction;
+            const tipoM    = raw.match(/Tipo actuacion:\s*\n?([^\n\u2014]+)/i);
+            const detalleM = raw.match(/Detalle:\s*\n?([^\n\u2014]+)/i);
+            if (detalleM) desc = detalleM[1].trim();
+            else if (tipoM) desc = tipoM[1].trim();
+            else desc = raw.replace(/[^\n]+:\n/g, '').replace(/\n/g, ' ').trim().slice(0, 80);
+          }
+          ultimaHtml = `
+            ${c.lastActionDate ? `<span class="ultima-fecha">📅 ${c.lastActionDate}</span>` : ''}
+            ${desc ? `<span class="ultima-desc" title="${esc(desc)}">${esc(desc.slice(0,60))}${desc.length>60?'…':''}</span>` : ''}
+          `;
+        }
+
+        // Días sin movimiento
+        let sinMovHtml = '—';
+        if (c.lastActionDate) {
+          const d = daysSince(c.lastActionDate);
+          if (d !== null) {
+            const cls  = d < 30 ? 'ok' : d < 90 ? 'med' : 'high';
+            const icon = d < 30 ? '🟢' : d < 90 ? '🟡' : '🔴';
+            sinMovHtml = `<span class="sinmov-badge estado-sinmov-${cls}">${icon} ${d} días</span>`;
+          }
+        }
+
+        const closedBadge = c.possibleClosed ? `<span class="badge-closed" title="${esc(c.possibleClosedReason||'')}">⚠ cerrado?</span>` : '';
+        tr.innerHTML = `
+          <td>${sinMovHtml}</td>
+          <td class="client-name">${esc(c.clientName)}${closedBadge ? ' ' + closedBadge : ''}</td>
+          <td class="case-number">${esc(c.caseNumber)}</td>
+          <td class="tribunal-col">${esc(c.tribunal || '—')}</td>
+          <td><span class="pjn-estado ${pjnCls}">${esc(estadoPJN)}</span></td>
+          <td class="ultima-col">${ultimaHtml}</td>
+        `;
+      } else {
+        // ── Fila estándar ────────────────────────────────────────
+        const statusClass = {
+          active: 'status-active', pending: 'status-pending', closed: 'status-closed',
+          won: 'status-won', lost: 'status-lost', appealed: 'status-appealed', desisted: 'status-desisted'
+        }[c.status] || '';
+        const badges = [];
+        const estadoTexto = c.rawEstado || c.proceduralStage || '—';
+        const resuelto = /resuelto/i.test(estadoTexto);
+        if (resuelto)
+          badges.push(`<span class="estado-badge estado-resuelto">✅ RESUELTO</span>`);
+        if (c.intimaciones && c.intimaciones.length > 0)
+          badges.push(`<span class="estado-badge estado-intimado">⚠ INTIMADO</span>`);
+        if (c.disposicion)
+          badges.push(`<span class="estado-badge estado-disposicion">📄 DISP. ${esc(c.disposicion)}</span>`);
+        const estadoCell = `<div style="display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:0.82rem;${resuelto?'color:var(--success);font-weight:600;':''}">${esc(estadoTexto)}</span>
+          ${badges.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${badges.join('')}</div>` : ''}
+        </div>`;
+        const statusLabel = {
+          active: 'Activo', pending: 'Pendiente', closed: 'Cerrado',
+          won: 'Sent. Favorable', lost: 'Sent. Desfavorable',
+          appealed: 'En apelación', desisted: 'Desistido'
+        }[c.status] || c.status;
+        tr.innerHTML = `
+          <td class="client-name">${esc(c.clientName)}</td>
+          <td class="case-number">${esc(c.caseNumber)}</td>
+          <td>${estadoCell}</td>
+          <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+          <td>${deadlineBadgeHTML(c.nextDeadline)}</td>
+          <td>${intimacionBadgeHTML(c.intimaciones)}</td>
+        `;
+      }
+
+      tr.addEventListener('click', () => openCaseDetail(c.id));
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Open case detail ───────────────────────────────────────
+  function openCaseDetail(id) {
+    currentCaseId = id;
+    renderCaseDetail(id);
+    showView('view-case-detail');
+  }
+
+  function renderCaseDetail(id) {
+    const c = cases.find(x => x.id === id);
+    if (!c) return;
+
+    document.getElementById('detail-heading').textContent = 'Detalle del caso';
+    document.getElementById('detail-case-title').textContent = c.caseTitle;
+    document.getElementById('detail-client-name').textContent = c.clientName;
+    document.getElementById('detail-case-number').textContent = c.caseNumber;
+    document.getElementById('detail-category').textContent = CATEGORIES[c.category] || c.category;
+    const statusLabels = { active: 'Activo', pending: 'Pendiente', closed: 'Cerrado', won: 'Sent. Favorable', lost: 'Sent. Desfavorable', appealed: 'En apelación', desisted: 'Desistido' };
+    document.getElementById('detail-status').textContent = statusLabels[c.status] || c.status;
+    document.getElementById('detail-procedural-stage').textContent = c.proceduralStage;
+
+    const isConst = c.category === 'constitutional' || c.category === 'amparo';
+
+    // PJN link
+    const pjnBtn = document.getElementById('pjn-link-btn');
+    if (isConst && c.caseNumber && c.caseNumber !== '—') {
+      pjnBtn.style.display = '';
+      pjnBtn.title = `Abrir ${c.caseNumber} en el PJN`;
+      pjnBtn.onclick = (e) => {
+        e.preventDefault();
+        showToast('Abriendo PJN...', 'info');
+        fetch('/open-pjn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ caseNumber: c.caseNumber })
+        }).catch(() => showToast('No se pudo conectar al servidor', 'err'));
+      };
+    } else {
+      pjnBtn.style.display = 'none';
+    }
+
+    // possibleClosed alert
+    const closedAlert = document.getElementById('detail-possibly-closed-alert');
+    if (c.possibleClosed) {
+      closedAlert.style.display = '';
+      closedAlert.innerHTML = `⚠ <strong>Posiblemente cerrado</strong> — ${esc(c.possibleClosedReason || 'Verificar en PJN')}`;
+    } else {
+      closedAlert.style.display = 'none';
+    }
+
+    // Tipo de acción + snippets button
+    const tipoField = document.getElementById('detail-tipo-accion-field');
+    const snippetsBtn = document.getElementById('snippets-btn');
+    if (isConst) {
+      const tipo = detectTipoAccion(c);
+      tipoField.style.display = '';
+      document.getElementById('detail-tipo-accion').innerHTML =
+        `<span class="tipo-badge tipo-badge--${tipo}">${TIPO_LABELS[tipo] || tipo}</span>`;
+      snippetsBtn.style.display = '';
+      snippetsBtn.onclick = () => openSnippets(c.id);
+    } else {
+      tipoField.style.display = 'none';
+      snippetsBtn.style.display = 'none';
+    }
+
+    document.getElementById('detail-tribunal-field').style.display    = isConst ? '' : 'none';
+    document.getElementById('detail-last-action-field').style.display = isConst ? '' : 'none';
+    document.getElementById('detail-tribunal').textContent    = c.tribunal    || '—';
+    document.getElementById('detail-last-action').textContent = c.lastAction  || '—';
+
+    const diasMovField = document.getElementById('detail-dias-mov-field');
+    const d = isConst ? daysSince(c.lastActionDate) : null;
+    diasMovField.style.display = (d !== null) ? '' : 'none';
+    if (d !== null) {
+      const color = d < 30 ? 'var(--success)' : d < 90 ? 'var(--warning)' : 'var(--danger)';
+      const texto = d === 0 ? 'Movimiento hoy' : `${d} día${d !== 1 ? 's' : ''}`;
+      document.getElementById('detail-dias-mov').innerHTML = `<span style="color:${color};font-weight:700;font-size:1.05rem;">${texto}</span>`;
+    }
+
+    const days  = daysUntil(c.nextDeadline);
+    const level = deadlineLevel(days);
+    const block = document.getElementById('detail-precaria-block');
+    block.style.display = isConst ? 'none' : '';
+    block.className = `precaria-block precaria-block--${level}`;
+    const icons = { ok: '✅', soon: '⚠️', urgent: '🚨', overdue: '🚨', none: '📅' };
+    block.querySelector('.precaria-block__icon').textContent = icons[level];
+    document.getElementById('detail-next-deadline').textContent = c.nextDeadline ? formatDate(c.nextDeadline) : '—';
+    const daysEl = document.getElementById('detail-precaria-days');
+    if (level === 'none')    daysEl.textContent = 'Sin fecha cargada';
+    else if (level === 'overdue') daysEl.textContent = `Vencida hace ${Math.abs(days)} día${Math.abs(days) !== 1 ? 's' : ''}`;
+    else if (days === 0)     daysEl.textContent = '¡Vence hoy!';
+    else                     daysEl.textContent = `Vence en ${days} día${days !== 1 ? 's' : ''}`;
+
+    document.getElementById('detail-precaria-block').style.display       = isConst ? 'none' : '';
+    document.getElementById('detail-const-deadline-field').style.display  = isConst ? '' : 'none';
+    document.getElementById('detail-const-deadline').textContent          = c.nextDeadline ? formatDate(c.nextDeadline) : '—';
+
+    // Plazo Engine
+    const plazoSection = document.getElementById('detail-plazo-section');
+    const plazoBlock   = document.getElementById('detail-plazo-block');
+    if (isConst) {
+      plazoSection.style.display = '';
+      const plazo = computePlazo(c);
+      if (plazo) {
+        const cls = plazo.isOverdue ? 'overdue' : plazo.daysLeft <= 5 ? 'warning' : 'ok';
+        const daysCls = `plazo-engine-block__days--${cls}`;
+        let daysText;
+        if (plazo.isOverdue) daysText = `Venció hace ${Math.abs(plazo.daysLeft)} día${Math.abs(plazo.daysLeft) !== 1 ? 's' : ''} hábiles`;
+        else if (plazo.daysLeft === 0) daysText = '¡Vence hoy!';
+        else daysText = `${plazo.daysLeft} día${plazo.daysLeft !== 1 ? 's' : ''} hábiles restantes`;
+        plazoBlock.innerHTML = `<div class="plazo-engine-block plazo-engine-block--${cls}">
+          <div class="plazo-engine-block__label">${plazo.label}</div>
+          <div class="plazo-engine-block__days ${daysCls}">${daysText}</div>
+          <div class="plazo-engine-block__meta">Vencimiento: ${formatDate(plazo.deadline)} · ${plazo.dias} días hábiles desde notificación${plazo.grace ? ' · Plazo de gracia: 2 primeras horas hábiles del día siguiente (7:30–9:30 hs)' : ''}</div>
+          ${plazo.isOverdue || plazo.daysLeft <= 3 ? `<div class="plazo-engine-block__suggestion">${plazo.suggestion}</div>` : ''}
+          <div class="plazo-engine-block__trigger">
+            <span>Fecha traslado:</span>
+            <input type="date" class="plazo-trigger-input" value="${c.plazoTriggerDate || ''}"
+              onchange="savePlazoTrigger('${c.id}', this.value)" />
+          </div>
+        </div>`;
+      } else {
+        plazoBlock.innerHTML = `<div class="plazo-engine-block">
+          <div class="plazo-engine-block__label">Sin fecha de traslado registrada</div>
+          <div class="plazo-engine-block__trigger">
+            <span>Registrar fecha:</span>
+            <input type="date" class="plazo-trigger-input" value=""
+              onchange="savePlazoTrigger('${c.id}', this.value)" />
+          </div>
+        </div>`;
+      }
+    } else {
+      plazoSection.style.display = 'none';
+    }
+
+    document.getElementById('detail-last-updated').textContent = formatDateTime(c.lastUpdated);
+    document.getElementById('detail-notes').textContent = c.notes || '—';
+
+    // Documento descargado (precaria / intimación)
+    const docSection = document.getElementById('detail-documento-section');
+    const docLink    = document.getElementById('detail-documento-link');
+    if (c.documentoPath) {
+      const fileName = c.documentoPath.replace(/\\/g, '/').split('/').pop();
+      docLink.href = `http://localhost:8000/documentos/${fileName}`;
+      docSection.style.display = '';
+    } else {
+      docSection.style.display = 'none';
+    }
+
+    // Juzgado notes
+    const juzgadoSection = document.getElementById('detail-juzgado-note-section');
+    const juzgadoInput   = document.getElementById('detail-juzgado-note-input');
+    const juzgadoLabel   = document.getElementById('detail-juzgado-note-label');
+    if (isConst && c.tribunal) {
+      const key = juzgadoKey(c.tribunal);
+      juzgadoSection.style.display = '';
+      juzgadoLabel.textContent = `📌 Nota: ${c.tribunal}`;
+      juzgadoInput.value = key ? (juzgadoNotes[key] || '') : '';
+      juzgadoInput.oninput = () => {
+        if (key) { juzgadoNotes[key] = juzgadoInput.value; saveJuzgadoNotes(); }
+      };
+    } else {
+      juzgadoSection.style.display = 'none';
+    }
+
+    // Intimaciones
+    const intimaciones = c.intimaciones || [];
+    const section = document.getElementById('detail-intimaciones-section');
+    const list    = document.getElementById('detail-intimaciones-list');
+    if (intimaciones.length === 0) {
+      section.style.display = 'none';
+    } else {
+      section.style.display = '';
+      list.innerHTML = intimaciones.map(it => {
+        const daysLeft = daysUntil(it.vencimiento);
+        const level    = deadlineLevel(daysLeft);
+        let diasTexto;
+        if (level === 'overdue') diasTexto = `Vencida hace ${Math.abs(daysLeft)} días`;
+        else if (daysLeft === 0) diasTexto = '¡Vence hoy!';
+        else                     diasTexto = `Quedan ${daysLeft} días`;
+        return `<div class="intimacion-card">
+          <div class="intimacion-card__header">
+            <span class="intimacion-card__title">📋 Intimación del ${formatDate(it.fecha)}</span>
+            <span class="deadline-badge deadline-badge--${level}">
+              <span>${diasTexto}</span>
+              <span class="db-date">Vence ${formatDate(it.vencimiento)}</span>
+            </span>
+            <span class="intimacion-card__meta">Plazo otorgado: ${it.plazo} días</span>
+          </div>
+          <div class="intimacion-card__texto">${esc(it.texto) || 'Sin detalle disponible.'}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Sugerencia
+    const sugSection = document.getElementById('detail-suggestion-section');
+    const sugText    = document.getElementById('detail-suggestion-text');
+    if (isConst && c.suggestion) {
+      sugSection.style.display = '';
+      sugText.textContent = c.suggestion;
+      sugText.className = `suggestion-card ${c.urgency || 'normal'}`;
+    } else {
+      sugSection.style.display = 'none';
+    }
+
+    // Análisis IA
+    const iaSection = document.getElementById('detail-ia-section');
+    const iaText    = document.getElementById('detail-ia-text');
+    if (isConst && c.caseAnalysis) {
+      iaSection.style.display = '';
+      iaText.textContent = c.caseAnalysis;
+    } else {
+      iaSection.style.display = 'none';
+    }
+
+    // Timeline de actuaciones
+    const actSection = document.getElementById('detail-actuaciones-section');
+    const actList    = document.getElementById('detail-actuaciones-list');
+    const actuaciones = c.recentActuaciones || [];
+    if (isConst && actuaciones.length > 0) {
+      actSection.style.display = '';
+      actList.innerHTML = actuaciones.map(a => {
+        const desc = (a.descripcion || '').replace(/^\d{2}\/\d{2}\/\d{4}\s*—?\s*/, '').trim();
+        const docPreview = a.documento
+          ? `<div class="act-item__doc">${esc(a.documento.split('\n').find(l => l.trim()) || '').slice(0, 120)}</div>`
+          : '';
+        return `<div class="act-item">
+          <div class="act-item__dot"></div>
+          <div class="act-item__date">${esc(a.fecha || '')}</div>
+          <div>
+            <div class="act-item__desc">${esc(desc)}</div>
+            ${docPreview}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      actSection.style.display = 'none';
+    }
+
+    // History
+    const history = c.history || [];
+    const histSection = document.getElementById('detail-history-section');
+    const histList = document.getElementById('detail-history-list');
+    if (history.length === 0) {
+      histSection.style.display = 'none';
+    } else {
+      histSection.style.display = '';
+      histList.innerHTML = history.map(h => {
+        const d = new Date(h.date);
+        const dateStr = d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+        const changes = Object.entries(h.changes).map(([k,v]) => `<strong>${k}:</strong> ${esc(v)}`).join(' · ');
+        return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:0.82rem;color:var(--text-secondary);">
+          <span style="color:var(--accent);margin-right:10px;">${dateStr}</span>${changes}
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── Modal ──────────────────────────────────────────────────
+  function openModal({ category = null, caseId = null, mode = 'create' } = {}) {
+    clearForm();
+    document.getElementById('modal-title').textContent = mode === 'edit' ? 'Editar caso' : 'Nuevo caso';
+    document.getElementById('modal-save-btn').textContent = mode === 'edit' ? 'Guardar' : 'Guardar';
+
+    let data = null;
+    if (mode === 'edit' && caseId) {
+      const c = cases.find(x => x.id === caseId);
+      if (c) {
+        data = c;
+        document.getElementById('f-category').value       = c.category;
+        document.getElementById('f-client-name').value    = c.clientName;
+        document.getElementById('f-case-number').value    = c.caseNumber;
+        document.getElementById('f-case-title').value     = c.caseTitle;
+        document.getElementById('f-procedural-stage').value = c.proceduralStage;
+        document.getElementById('f-status').value         = c.status;
+        document.getElementById('f-next-deadline').value  = c.nextDeadline;
+        document.getElementById('f-notes').value          = c.notes || '';
+      }
+    } else if (category) {
+      document.getElementById('f-category').value = category;
+    }
+
+    const isConst = (data?.category === 'constitutional') || (category === 'constitutional') || (data?.category === 'amparo') || (category === 'amparo');
+    document.getElementById('fg-tribunal').style.display       = isConst ? '' : 'none';
+    document.getElementById('fg-last-action').style.display    = isConst ? '' : 'none';
+    document.getElementById('fg-plazo-trigger').style.display  = isConst ? '' : 'none';
+    if (data) {
+      document.getElementById('f-tribunal').value         = data.tribunal         || '';
+      document.getElementById('f-last-action').value      = data.lastAction       || '';
+      document.getElementById('f-plazo-trigger').value    = data.plazoTriggerDate || '';
+    }
+
+    document.getElementById('modal-overlay').classList.add('open');
+    // Store edit mode on save button dataset
+    document.getElementById('modal-save-btn').dataset.mode   = mode;
+    document.getElementById('modal-save-btn').dataset.caseId = caseId || '';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    clearForm();
+  }
+
+  function clearForm() {
+    ['f-category','f-client-name','f-case-number','f-case-title',
+     'f-procedural-stage','f-next-deadline','f-notes',
+     'f-tribunal','f-last-action','f-plazo-trigger'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else el.value = '';
+      el.classList.remove('error');
+    });
+    document.getElementById('f-status').value = 'active';
+    document.querySelectorAll('.field-error').forEach(e => e.classList.remove('visible'));
+  }
+
+  function validateForm() {
+    const required = [
+      { id: 'f-category',        errId: 'err-category' },
+      { id: 'f-client-name',     errId: 'err-client-name' },
+      { id: 'f-case-number',     errId: 'err-case-number' },
+      { id: 'f-case-title',      errId: 'err-case-title' },
+      { id: 'f-procedural-stage',errId: 'err-procedural-stage' },
+      { id: 'f-next-deadline',   errId: 'err-next-deadline' },
+    ];
+    let valid = true;
+    required.forEach(({ id, errId }) => {
+      const el = document.getElementById(id);
+      const err = document.getElementById(errId);
+      if (!el.value.trim()) {
+        el.classList.add('error');
+        err.classList.add('visible');
+        valid = false;
+      } else {
+        el.classList.remove('error');
+        err.classList.remove('visible');
+      }
+    });
+    return valid;
+  }
+
+  function handleFormSubmit() {
+    if (!validateForm()) return;
+
+    const saveBtn = document.getElementById('modal-save-btn');
+    const mode    = saveBtn.dataset.mode;
+    const caseId  = saveBtn.dataset.caseId;
+
+    const data = {
+      category:        document.getElementById('f-category').value,
+      clientName:      document.getElementById('f-client-name').value.trim(),
+      caseNumber:      document.getElementById('f-case-number').value.trim(),
+      caseTitle:       document.getElementById('f-case-title').value.trim(),
+      proceduralStage: document.getElementById('f-procedural-stage').value.trim(),
+      status:          document.getElementById('f-status').value,
+      nextDeadline:    document.getElementById('f-next-deadline').value,
+      notes:           document.getElementById('f-notes').value.trim(),
+      tribunal:          document.getElementById('f-tribunal').value.trim(),
+      lastAction:        document.getElementById('f-last-action').value.trim(),
+      plazoTriggerDate:  document.getElementById('f-plazo-trigger').value || '',
+    };
+
+    if (mode === 'edit' && caseId) {
+      updateCase(caseId, data);
+      showToast('✓ Caso actualizado', 'ok');
+    } else {
+      createCase(data);
+      showToast('✓ Caso creado', 'ok');
+    }
+
+    closeModal();
+    renderDashboard();
+    renderCaseList(currentCategory);
+    if (mode === 'edit') renderCaseDetail(currentCaseId);
+  }
+
+  // ── CRUD ───────────────────────────────────────────────────
+  function createCase(data) {
+    const newCase = {
+      id: generateId(),
+      lastUpdated: new Date().toISOString(),
+      ...data
+    };
+    cases.push(newCase);
+    saveCases();
+  }
+
+  function updateCase(id, data) {
+    const idx = cases.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    cases[idx] = { ...cases[idx], ...data, lastUpdated: new Date().toISOString() };
+    saveCases();
+  }
+
+  function deleteCase(id) {
+    if (!confirm('¿Eliminar este caso? Esta acción no se puede deshacer.')) return;
+    cases = cases.filter(c => c.id !== id);
+    saveCases();
+    showToast('Caso eliminado', 'info');
+    renderDashboard();
+    if (currentSubTipo) openSubCaseList(currentSubTipo);
+    else openCaseList(currentCategory);
+  }
+
+  // ── Escape helper (XSS guard) ──────────────────────────────
+  function esc(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  // ── Auto-load results from server ──────────────────────────
+  function autoLoadResults() {
+    fetch('migraciones_results.json?t=' + Date.now())
+      .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+      .then(results => {
+        let updated = 0;
+        results.forEach(r => {
+          if (!r.queried) return;
+          const idx = cases.findIndex(c => c.caseNumber === r.caseNumber);
+          if (idx === -1) return;
+          recordHistory(cases[idx], r);
+          if (r.status)          cases[idx].status          = r.status;
+          if (r.nextDeadline)    cases[idx].nextDeadline    = r.nextDeadline;
+          if (r.proceduralStage) cases[idx].proceduralStage = r.proceduralStage;
+          if (r.notes)           cases[idx].notes           = r.notes;
+          if (r.rawEstado)       cases[idx].rawEstado       = r.rawEstado;
+          if (r.disposicion)     cases[idx].disposicion     = r.disposicion;
+          if (r.documentoPath)   cases[idx].documentoPath   = r.documentoPath;
+          cases[idx].lastUpdated = new Date().toISOString();
+          updated++;
+        });
+        if (updated > 0) {
+          saveCases();
+          renderDashboard();
+        }
+      })
+      .catch(() => { /* no results file yet, skip silently */ });
+  }
+
+  // ── History tracking ───────────────────────────────────────
+  function recordHistory(caseObj, changes) {
+    if (!caseObj.history) caseObj.history = [];
+    const entry = { date: new Date().toISOString(), changes: {} };
+    if (changes.status)       entry.changes.estado      = changes.status;
+    if (changes.nextDeadline) entry.changes.vencimiento = changes.nextDeadline;
+    if (changes.rawEstado)    entry.changes.rawEstado   = changes.rawEstado;
+    if (Object.keys(entry.changes).length > 0) {
+      caseObj.history.unshift(entry); // newest first
+      if (caseObj.history.length > 20) caseObj.history = caseObj.history.slice(0, 20);
+    }
+  }
+
+  // ── Calendar ───────────────────────────────────────────────
+  let calYear, calMonth;
+
+  function openCalendar() {
+    const now = new Date();
+    calYear = now.getFullYear();
+    calMonth = now.getMonth();
+    renderCalendar();
+    showView('view-calendar');
+  }
+
+  function renderCalendar() {
+    const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    document.getElementById('cal-month-label').textContent = `${months[calMonth]} ${calYear}`;
+
+    const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+    // Collect all events this month
+    const events = {};
+    cases.forEach(c => {
+      const addEvent = (dateStr, label, type) => {
+        if (!dateStr) return;
+        const d = new Date(dateStr + 'T00:00:00');
+        if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+          const day = d.getDate();
+          if (!events[day]) events[day] = [];
+          events[day].push({ label, type, caseId: c.id });
+        }
+      };
+      const dl = daysUntil(c.nextDeadline);
+      const precType = dl < 0 ? 'urgent' : dl <= 10 ? 'warning' : 'precaria';
+      addEvent(c.nextDeadline, c.clientName, precType);
+      (c.intimaciones || []).forEach(it => addEvent(it.vencimiento, `INT: ${c.clientName}`, 'intimacion'));
+    });
+
+    let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day cal-day--empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(calYear, calMonth, d);
+      const isToday = date.getTime() === today.getTime();
+      const dayEvents = events[d] || [];
+      const evHtml = dayEvents.slice(0,3).map(e =>
+        `<span class="cal-event cal-event--${e.type}" onclick="openCaseDetail('${e.caseId}');showView('view-case-detail');">${esc(e.label)}</span>`
+      ).join('');
+      const more = dayEvents.length > 3 ? `<span style="color:var(--text-secondary);font-size:0.68rem;">+${dayEvents.length-3} más</span>` : '';
+      html += `<div class="cal-day${isToday?' cal-day--today':''}">
+        <div class="cal-day__num">${d}</div>${evHtml}${more}
+      </div>`;
+    }
+    document.getElementById('cal-grid').innerHTML = html;
+  }
+
+  // ── Export / Print summary ─────────────────────────────────
+  function exportSummary() {
+    const cat = currentCategory;
+    const catName = CATEGORIES[cat] || cat;
+    const list = sortCases(getCasesByCategory(cat));
+    const today = new Date().toLocaleDateString('es-AR');
+
+    let rows = list.map(c => {
+      const days = daysUntil(c.nextDeadline);
+      const urgencia = days < 0 ? 'VENCIDA' : days <= 10 ? `${days} días` : formatDate(c.nextDeadline);
+      const intimacion = c.intimaciones && c.intimaciones.length > 0
+        ? c.intimaciones.map(it => `${formatDate(it.fecha)}: ${it.texto.slice(0,80)}...`).join('<br>')
+        : '—';
+      return `<tr>
+        <td>${esc(c.clientName)}</td>
+        <td>${esc(c.caseNumber)}</td>
+        <td>${esc(c.rawEstado || c.proceduralStage)}</td>
+        <td style="color:${days < 0 ? '#c0392b' : days <= 10 ? '#e67e22' : '#27ae60'}">${urgencia}</td>
+        <td>${intimacion}</td>
+      </tr>`;
+    }).join('');
+
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>NegroLex — ${catName} — ${today}</title>
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; padding: 20px; }
+      h1 { font-size: 18px; margin-bottom: 4px; }
+      .sub { color: #666; margin-bottom: 16px; font-size: 11px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #1a1a2e; color: #fff; padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; }
+      td { padding: 7px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+      tr:nth-child(even) { background: #f9f9f9; }
+      @media print { body { padding: 0; } }
+    </style></head><body>
+    <h1>NegroLex — ${esc(catName)}</h1>
+    <div class="sub">Generado el ${today} · ${list.length} casos</div>
+    <table>
+      <thead><tr><th>Cliente</th><th>Expediente</th><th>Estado</th><th>Venc. Precaria</th><th>Intimaciones</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <script>window.print();<\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  // ── Argentina Business Days ─────────────────────────────────
+  // Feria judicial CAF: 2 primeras semanas de enero + 2 últimas semanas de julio
+  function _feriaRange(y, startMo, startDy, endMo, endDy) {
+    const dates = new Set();
+    const cur = new Date(`${y}-${String(startMo).padStart(2,'0')}-${String(startDy).padStart(2,'0')}T00:00:00`);
+    const end = new Date(`${y}-${String(endMo).padStart(2,'0')}-${String(endDy).padStart(2,'0')}T00:00:00`);
+    while (cur <= end) { dates.add(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+    return dates;
+  }
+  function _buildHolidays() {
+    const fixed = [
+      '2025-01-01','2025-03-03','2025-03-04','2025-04-02','2025-04-17','2025-04-18',
+      '2025-05-01','2025-05-25','2025-06-16','2025-06-20','2025-07-09','2025-08-15',
+      '2025-08-18','2025-10-12','2025-11-21','2025-11-22','2025-12-08','2025-12-25',
+      '2026-01-01','2026-02-16','2026-02-17','2026-04-02','2026-04-03','2026-04-06',
+      '2026-05-01','2026-05-25','2026-06-15','2026-06-20','2026-07-09','2026-08-17',
+      '2026-10-12','2026-11-23','2026-12-07','2026-12-08','2026-12-25',
+      '2027-01-01','2027-02-08','2027-02-09','2027-03-29','2027-04-01','2027-04-02',
+      '2027-05-01','2027-05-25','2027-06-21','2027-07-09','2027-08-16','2027-10-11',
+      '2027-11-22','2027-12-08','2027-12-25',
+    ];
+    const s = new Set(fixed);
+    // Feria verano: 1-15 enero cada año
+    // Feria invierno: 14-25 julio cada año
+    [2025, 2026, 2027].forEach(y => {
+      _feriaRange(y, 1,  1, 1, 15).forEach(d => s.add(d));
+      _feriaRange(y, 7, 14, 7, 25).forEach(d => s.add(d));
+    });
+    return s;
+  }
+  const ARGENTINA_HOLIDAYS = _buildHolidays();
+
+  function isBusinessDay(date) {
+    const d = date.getDay();
+    if (d === 0 || d === 6) return false;
+    return !ARGENTINA_HOLIDAYS.has(date.toISOString().slice(0,10));
+  }
+
+  function businessDaysBetween(isoFrom, isoTo) {
+    if (!isoFrom || !isoTo) return null;
+    const from = new Date(isoFrom + 'T00:00:00');
+    const to   = new Date(isoTo   + 'T00:00:00');
+    let count = 0, cur = new Date(from);
+    const dir = to >= from ? 1 : -1;
+    while (cur.getTime() !== to.getTime()) {
+      cur.setDate(cur.getDate() + dir);
+      if (isBusinessDay(cur)) count += dir;
+    }
+    return count;
+  }
+
+  function addBusinessDays(isoFrom, n) {
+    const d = new Date(isoFrom + 'T00:00:00');
+    let rem = Math.abs(n), dir = n >= 0 ? 1 : -1;
+    while (rem > 0) { d.setDate(d.getDate() + dir); if (isBusinessDay(d)) rem--; }
+    return d.toISOString().slice(0,10);
+  }
+
+  // ── Plazo Engine ─────────────────────────────────────────────
+
+  // Plazos según tipo de proceso (días hábiles desde notificación/traslado).
+  // El plazo empieza al día hábil SIGUIENTE a la notificación (cómputo por días completos).
+  // "Plazo de gracia": el escrito es válido hasta las 2 primeras horas hábiles del día posterior
+  // al vencimiento real (habitualmente 7:30–9:30 hs). Se muestra como info, no cambia el deadline.
+  function computePlazo(c) {
+    const triggerDate = c.plazoTriggerDate;
+    if (!triggerDate) return null;
+    const tipo = detectTipoAccion(c);
+    let dias, label, suggestion, grace;
+    if (tipo === 'recurso_directo') {
+      // Art. 32 Ley 25.871: 30 días hábiles para interponer recurso directo contra resolución DNM.
+      // Una vez en trámite, Art. 77: traslado de 5 días hábiles para informar.
+      dias = 30;
+      label = 'Recurso Directo · Art. 32 Ley 25.871';
+      suggestion = 'Vencido el plazo — verificar si se interpuso o hay resolución';
+      grace = true;
+    } else if (tipo === 'amparo_mora') {
+      // Art. 28 Ley 19.549: 5 días hábiles de plazo para responder el pronto despacho.
+      // Pasados esos días queda habilitada la instancia judicial.
+      dias = 5;
+      label = 'Pronto Despacho Administrativo · Art. 28 Ley 19.549';
+      suggestion = 'Plazo cumplido — presentar demanda habilitando instancia judicial';
+      grace = false;
+    } else if (tipo === 'inconstitucionalidad') {
+      // Proceso de Conocimiento: 15 días hábiles para contestar traslado de demanda.
+      // Para apelar sentencia: 5 días hábiles (registrar ese plazo por separado).
+      dias = 15;
+      label = 'Traslado de demanda · Proceso de Conocimiento';
+      suggestion = 'Vencido el plazo de contestación — impulsar';
+      grace = true;
+    } else {
+      return null;
+    }
+    // El plazo empieza al día hábil siguiente a la fecha de notificación/traslado
+    const startDate = addBusinessDays(triggerDate, 1);
+    const deadline  = addBusinessDays(startDate, dias - 1);
+    const today     = new Date().toISOString().slice(0, 10);
+    const daysLeft  = businessDaysBetween(today, deadline);
+    const isOverdue = daysLeft < 0;
+    return { deadline, daysLeft, isOverdue, label, suggestion, dias, grace };
+  }
+
+  function urgencyScore(c) {
+    const d = daysSince(c.lastActionDate);
+    const plazo = computePlazo(c);
+    let I = 1;
+    if (c.urgency === 'urgent') I = 3;
+    else if (c.urgency === 'watch') I = 2;
+    let T;
+    if (plazo && plazo.isOverdue)  T = 0.1;
+    else if (plazo)                T = Math.max(plazo.daysLeft, 0.5);
+    else if (d !== null)           T = Math.max(1, 200 - d);
+    else                           T = 100;
+    return I / T;
+  }
+
+  function plazoDeadlineDot(c) {
+    const plazo = computePlazo(c);
+    if (plazo) {
+      if (plazo.isOverdue || plazo.daysLeft <= 1) return 'red';
+      if (plazo.daysLeft <= 5) return 'yellow';
+      return 'green';
+    }
+    const d = daysSince(c.lastActionDate);
+    if (d !== null && d > 150) return 'red';
+    if (d !== null && d > 90)  return 'yellow';
+    return 'none';
+  }
+
+  function renderHeatmap(list) {
+    const el = document.getElementById('kanban-heatmap');
+    if (!el) return;
+    const scored = list
+      .map(c => ({ c, score: urgencyScore(c) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+    const maxScore = scored[0]?.score || 1;
+    el.innerHTML = `<div class="heatmap-sidebar__title">⚠ Top urgencias</div>` +
+      (scored.length === 0
+        ? '<div style="color:var(--text-secondary);font-size:0.78rem;">Sin casos</div>'
+        : scored.map(({ c, score }) => {
+            const plazo = computePlazo(c);
+            const d = daysSince(c.lastActionDate);
+            let sug = '';
+            if (plazo?.isOverdue)        sug = `⚡ ${plazo.suggestion}`;
+            else if (plazo)              sug = `Plazo vence en ${plazo.daysLeft}d hábiles`;
+            else if (c.suggestion)       sug = c.suggestion;
+            else if (d !== null && d > 150) sug = `${d}d sin movimiento — impulsar`;
+            else if (d !== null && d > 90)  sug = `${d}d sin movimiento`;
+            const pct = Math.min(100, Math.round((score / maxScore) * 100));
+            return `<div class="heatmap-item" onclick="openCaseDetail('${c.id}');showView('view-case-detail');">
+              <div class="heatmap-item__name">${esc(c.clientName)}</div>
+              <div class="heatmap-item__nro">${esc(c.caseNumber)}</div>
+              ${sug ? `<div class="heatmap-item__suggestion">${esc(sug)}</div>` : ''}
+              <div class="heatmap-score-bar"><div class="heatmap-score-fill" style="width:${pct}%"></div></div>
+            </div>`;
+          }).join('')
+      );
+  }
+
+  function savePlazoTrigger(caseId, dateVal) {
+    const c = cases.find(x => x.id === caseId);
+    if (!c) return;
+    c.plazoTriggerDate = dateVal || '';
+    saveCases();
+    renderCaseDetail(caseId);
+  }
+
+  // ── Tipo Acción ──────────────────────────────────────────────
+  // Jerarquía de exclusión basada en la carátula (autos):
+  // 1. Amparo por Mora: "MORA" o "ART. 28" o "19.549" → siempre amparo_mora
+  // 2. Recurso Directo: "RECURSO DIRECTO" o "APELACI" + "RESOLUCI" o "ART. 32" o "25.871"
+  // 3. Inconstitucionalidad: "PROCESO DE CONOCIMIENTO" (generalmente con EN/PEN/DNU)
+  // 4. Fallback: inconstitucionalidad (si llegó hasta acá es contencioso de fondo)
+  function detectTipoAccion(c) {
+    const t = (c.caseTitle || '').toUpperCase();
+
+    // 1. Amparo por Mora (identificador: MORA, ART. 28, LEY 19.549)
+    if (/MORA/.test(t) || /ART[\.\s]*28/.test(t) || /19[\.\s]?549/.test(t)) return 'amparo_mora';
+
+    // 2. Recurso Directo (identificador: RECURSO DIRECTO, APELACIÓN RESOLUCIÓN, ART. 32, LEY 25.871)
+    if (/RECURSO DIRECTO/.test(t) || /APELACI[OÓ]N.*RESOLUCI[OÓ]N|APELACION.*RESOLUCION/.test(t) ||
+        /ART[\.\s]*32/.test(t) || /25[\.\s]?871/.test(t)) return 'recurso_directo';
+
+    // 3. Inconstitucionalidad / Proceso de Conocimiento
+    if (/PROCESO DE CONOCIMIENTO/.test(t)) return 'inconstitucionalidad';
+
+    // 4. Fallback explícito (INCONSTITUCIONALIDAD en el título, casos viejos)
+    return 'inconstitucionalidad';
+  }
+
+  const TIPO_LABELS = {
+    amparo_mora: 'Amparo por Mora',
+    recurso_directo: 'Recurso Directo',
+    inconstitucionalidad: 'Inconstitucionalidad',
+    proceso_conocimiento: 'Proceso de Conocimiento',
+    otro: 'Contencioso',
+  };
+
+  // ── Kanban ───────────────────────────────────────────────────
+  const KANBAN_COLS = [
+    { key: 'sin_datos', label: 'Sin datos PJN',            color: '#6b7280', phase: 0 },
+    { key: 'tramite',   label: 'Habilitación de Instancia',color: '#3fb950', phase: 1 },
+    { key: 'traslado',  label: 'Traslado / Informe DNM',   color: '#60a5fa', phase: 2 },
+    { key: 'dictamen',  label: 'Dictamen Fiscal',          color: '#a78bfa', phase: 3 },
+    { key: 'camara',    label: 'En Cámara',                color: '#d29922', phase: 4 },
+    { key: 'sentencia', label: 'Autos para Sentencia',     color: '#c9a84c', phase: 5 },
+  ];
+
+  function getKanbanColumn(c) {
+    const title = c.caseTitle || '';
+    if (!title || title.startsWith('Constitucional \u2013') || title.startsWith('Constitucional -')) return 'sin_datos';
+    const trib  = (c.tribunal || '').toUpperCase();
+    const stage = (c.proceduralStage || '').toUpperCase();
+    const last  = (c.lastAction || '').toUpperCase();
+    const acts  = (c.recentActuaciones || []).map(a => a.descripcion || '').join(' ').toUpperCase();
+    const all   = stage + ' ' + last + ' ' + acts;
+    if (/C[AÁ]MARA/.test(trib)) return 'camara';
+    if (/SENTENCIA|PURO DERECHO|LLAMADO A SENTENCIA/.test(all)) return 'sentencia';
+    if (/FISCAL[IÍ]A|DICTAMEN/.test(all)) return 'dictamen';
+    if (/TRASLADO|INFORME PREVIO|ART[\.\ ]*8/.test(all)) return 'traslado';
+    return 'tramite';
+  }
+
+  function openKanban(cat) {
+    currentCategory = cat;
+    document.getElementById('kanban-heading').textContent = CATEGORIES[cat] || cat;
+    renderKanban(cat);
+    showView('view-kanban');
+  }
+
+  function renderKanban(cat) {
+    const list = currentSubTipo
+      ? getContenciosoCases(currentSubTipo)
+      : (cat === 'constitutional'
+          ? cases.filter(c => c.category === 'constitutional' || c.category === 'amparo')
+          : getCasesByCategory(cat));
+    const colMap = {};
+    KANBAN_COLS.forEach(col => colMap[col.key] = []);
+    list.forEach(c => { const k = getKanbanColumn(c); if (colMap[k]) colMap[k].push(c); });
+
+    const phaseColors = ['#6b7280','#3fb950','#60a5fa','#a78bfa','#d29922','#c9a84c'];
+
+    document.getElementById('kanban-board').innerHTML = KANBAN_COLS.map(col => {
+      const cards = (colMap[col.key] || []).sort((a,b) => {
+        const sA = urgencyScore(a), sB = urgencyScore(b);
+        return sB - sA;
+      });
+      const cardsHtml = cards.map(c => {
+        const d = daysSince(c.lastActionDate);
+        const cls = d === null ? '' : d < 30 ? 'ok' : d < 90 ? 'med' : 'high';
+        const tipo = detectTipoAccion(c);
+        const dot = plazoDeadlineDot(c);
+        // Progress bar: phase 0-5, fill = phase/5 * 100%
+        const phasePct = col.phase * 20;
+        const phaseFill = phasePct === 0 ? 'background:#6b7280;' : `background:${col.color};`;
+        const hasPdf = !!c.documentoPath;
+        return `<div class="kanban-card" onclick="openCaseDetail('${c.id}');showView('view-case-detail');">
+          <div class="kanban-card__header">
+            <div style="flex:1;min-width:0;">
+              <div class="kanban-card__name">${esc(c.clientName)}</div>
+              <div class="kanban-card__nro">${esc(c.caseNumber)}</div>
+            </div>
+            <span class="kanban-card__dot kanban-card__dot--${dot}" title="Estado plazo"></span>
+          </div>
+          <div class="kanban-card__progress">
+            <div class="kanban-card__progress-fill" style="width:${phasePct}%;${phaseFill}"></div>
+          </div>
+          <div class="kanban-card__footer">
+            <span class="tipo-badge tipo-badge--${tipo}" style="font-size:0.61rem;padding:1px 6px;">${TIPO_LABELS[tipo]||tipo}</span>
+            ${d !== null ? `<span class="kanban-sinmov kanban-sinmov--${cls}">${d}d</span>` : ''}
+          </div>
+          <div class="kanban-card__actions" onclick="event.stopPropagation();">
+            ${hasPdf ? `<button class="kanban-quick-btn" title="Ver documento" onclick="window.open('http://localhost:8000/documentos/${c.documentoPath.replace(/\\/g,'/').split('/').pop()}','_blank')">📄</button>` : ''}
+            <button class="kanban-quick-btn" title="Generar escrito" onclick="openSnippets('${c.id}')">✍</button>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="kanban-col">
+        <div class="kanban-col__header" style="color:${col.color};">
+          ${col.label}<span class="kanban-col__count">${cards.length}</span>
+        </div>
+        <div class="kanban-col__cards">${cardsHtml || '<div style="color:var(--text-secondary);font-size:0.75rem;padding:4px;">Sin casos</div>'}</div>
+      </div>`;
+    }).join('');
+
+    renderHeatmap(list);
+  }
+
+  // ── Juzgado Notes ────────────────────────────────────────────
+  let juzgadoNotes = {};
+
+  function loadJuzgadoNotes() {
+    try { juzgadoNotes = JSON.parse(localStorage.getItem('lexcase_juzgado_notes') || '{}'); }
+    catch(e) { juzgadoNotes = {}; }
+  }
+
+  function saveJuzgadoNotes() {
+    localStorage.setItem('lexcase_juzgado_notes', JSON.stringify(juzgadoNotes));
+  }
+
+  function juzgadoKey(tribunal) {
+    if (!tribunal) return null;
+    return tribunal.trim().toUpperCase().replace(/\s+/g, '_').slice(0, 60);
+  }
+
+  // ── Snippets ─────────────────────────────────────────────────
+  const SNIPPETS = [
+    {
+      key: 'pronto_despacho', label: 'Pronto Despacho',
+      desc: 'Intima a la DNM a resolver la petición demorada (art. 28, Ley 19.549).',
+      template: `PRONTO DESPACHO\n\nA {{TRIBUNAL}}.\nExpediente N° {{EXPEDIENTE}} — "{{CARATULA}}"\n\n{{NOMBRE}}, en los autos de referencia, viene a promover PRONTO DESPACHO y solicita:\n\nQue habiendo transcurrido el plazo legalmente previsto sin que la Dirección Nacional de Migraciones resolviera la petición oportunamente formulada, solicita a V.S. se sirva intimar a dicha repartición para que en el plazo de CINCO (5) días hábiles produzca resolución, bajo apercibimiento de ley (art. 28, Ley 19.549).\n\nEsta omisión configura mora administrativa y habilita la vía del amparo por mora conforme el plexo normativo vigente.\n\nProveer de conformidad.\nSERÁ JUSTICIA.`,
+    },
+    {
+      key: 'informe_art8', label: 'Informe Art. 8 — Amparo',
+      desc: 'Pedido de informe a la demandada en el marco del amparo (Ley 16.986, art. 8).',
+      template: `SOLICITA INFORME — ART. 8 LEY 16.986\n\nA {{TRIBUNAL}}.\nExpediente N° {{EXPEDIENTE}} — "{{CARATULA}}"\n\n{{NOMBRE}}, en los autos de referencia, se presenta y solicita:\n\nCon arreglo al artículo 8° de la Ley 16.986, se cite a la Dirección Nacional de Migraciones a fin de que, en el plazo de CINCO (5) días hábiles, informe sobre los antecedentes y fundamentos de la conducta cuestionada.\n\nLa parte demandada deberá remitir el informe junto con el expediente administrativo pertinente, a fin de ilustrar a V.S. sobre las circunstancias del caso.\n\nProveer de conformidad.\nSERÁ JUSTICIA.`,
+    },
+    {
+      key: 'llamado_sentencia', label: 'Llamado a Sentencia',
+      desc: 'Solicita a V.S. que declare la causa de puro derecho y dicte sentencia.',
+      template: `LLÁMESE A SENTENCIA\n\nA {{TRIBUNAL}}.\nExpediente N° {{EXPEDIENTE}} — "{{CARATULA}}"\n\n{{NOMBRE}}, en los autos de referencia, viene a solicitar:\n\nQue habiéndose producido el intercambio de escritos previsto por la ley y precluido todas las etapas procesales, la causa se encuentra en condiciones de ser resuelta definitivamente.\n\nPor ello solicita a V.S.:\n1. Se declare la causa de PURO DERECHO conforme el art. 481 del CPCCN.\n2. Se dicte sentencia de conformidad con las constancias de autos y los fundamentos de derecho oportunamente expuestos.\n\nProveer de conformidad.\nSERÁ JUSTICIA.`,
+    },
+    {
+      key: 'traslado_recurso', label: 'Traslado — Recurso Directo',
+      desc: 'Solicita que se corra traslado a la DNM del recurso directo interpuesto.',
+      template: `SOLICITA TRASLADO DEL RECURSO DIRECTO\n\nA {{TRIBUNAL}}.\nExpediente N° {{EXPEDIENTE}} — "{{CARATULA}}"\n\n{{NOMBRE}}, en los autos de referencia, se presenta y solicita:\n\nSe corra traslado a la Dirección Nacional de Migraciones del recurso directo oportunamente interpuesto, a fin de que produzca el correspondiente memorial en el plazo legal, bajo apercibimiento de ley.\n\nA esos efectos, se pide se libre cédula de notificación a la DNM en su domicilio procesal constituido.\n\nProveer de conformidad.\nSERÁ JUSTICIA.`,
+    },
+    {
+      key: 'replica', label: 'Réplica (Recurso Directo)',
+      desc: 'Réplica a la contestación de la DNM. Incluye secciones para completar los argumentos.',
+      template: `RÉPLICA\n\nA {{TRIBUNAL}}.\nExpediente N° {{EXPEDIENTE}} — "{{CARATULA}}"\n\n{{NOMBRE}}, en los autos de referencia, viene a contestar el traslado corrido de la presentación de la parte demandada, y dice:\n\nI. PRELIMINAR\nLos argumentos esgrimidos por la Dirección Nacional de Migraciones no logran rebatir los fundamentos del recurso oportunamente interpuesto.\n\nII. RÉPLICA A LOS ARGUMENTOS DE LA DEMANDADA\n[Desarrollar los argumentos de réplica aquí]\n\nIII. PETITORIO\nPor lo expuesto, solicita:\n1. Se tenga por contestado el traslado en tiempo y forma.\n2. Producida la réplica, se llame a autos para sentencia.\n\nProveer de conformidad.\nSERÁ JUSTICIA.`,
+    },
+  ];
+
+  let _snippetCaseId = null;
+  let _snippetKey = SNIPPETS[0].key;
+
+  function openSnippets(caseId) {
+    _snippetCaseId = caseId;
+    _snippetKey = SNIPPETS[0].key;
+    renderSnippetTabs();
+    renderSnippetOutput();
+    document.getElementById('modal-snippets').classList.add('open');
+  }
+
+  function closeSnippets() {
+    document.getElementById('modal-snippets').classList.remove('open');
+  }
+
+  function renderSnippetTabs() {
+    const tabs = document.getElementById('snippet-tabs');
+    tabs.innerHTML = SNIPPETS.map(s =>
+      `<button class="snippets-tab${s.key === _snippetKey ? ' active' : ''}" data-key="${s.key}">${s.label}</button>`
+    ).join('');
+    tabs.querySelectorAll('.snippets-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _snippetKey = btn.dataset.key;
+        tabs.querySelectorAll('.snippets-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderSnippetOutput();
+      });
+    });
+  }
+
+  function renderSnippetOutput() {
+    const snip = SNIPPETS.find(s => s.key === _snippetKey);
+    if (!snip) return;
+    const c = cases.find(x => x.id === _snippetCaseId) || {};
+    const today = new Date().toLocaleDateString('es-AR', {day:'2-digit',month:'long',year:'numeric'});
+    document.getElementById('snippet-desc').textContent = snip.desc;
+    document.getElementById('snippet-output').value = snip.template
+      .replace(/\{\{NOMBRE\}\}/g,     c.clientName  || '________________')
+      .replace(/\{\{EXPEDIENTE\}\}/g, c.caseNumber  || '________________')
+      .replace(/\{\{CARATULA\}\}/g,   c.caseTitle   || '________________')
+      .replace(/\{\{TRIBUNAL\}\}/g,   c.tribunal    || 'V.S.')
+      .replace(/\{\{FECHA\}\}/g,      today);
+  }
+
+  function copySnippet() {
+    const ta = document.getElementById('snippet-output');
+    ta.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('snippet-copy-btn');
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => { btn.textContent = '📋 Copiar'; }, 1500);
+  }
+
+  // ── Notifications ──────────────────────────────────────────
+  let notifications = [];
+
+  async function loadNotifications() {
+    if (USE_SERVER) {
+      try {
+        const r = await fetch('/notifications');
+        notifications = await r.json();
+        return;
+      } catch(e) {}
+    }
+    try { notifications = JSON.parse(localStorage.getItem('negrolexNotifs') || '[]'); }
+    catch(e) { notifications = []; }
+  }
+
+  function saveNotifications() {
+    if (USE_SERVER) {
+      fetch('/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notifications)
+      }).catch(() => {});
+    }
+    localStorage.setItem('negrolexNotifs', JSON.stringify(notifications));
+  }
+
+  function updateNotifBadge() {
+    const badge = document.getElementById('notif-bell-badge');
+    const count = notifications.length;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function notifCategoryLabel(notif) {
+    const tipoLabels = {
+      amparo_mora:          'Contencioso — Amparo por Mora',
+      recurso_directo:      'Contencioso — Recurso Directo',
+      inconstitucionalidad: 'Contencioso — Inconstitucionalidades',
+    };
+    if (notif.tipoAccion && tipoLabels[notif.tipoAccion]) return tipoLabels[notif.tipoAccion];
+    if (notif.category === 'constitutional') return 'Contencioso Administrativo';
+    if (notif.category === 'amparo')         return 'Contencioso — Amparo por Mora';
+    return CATEGORIES[notif.category] || 'General';
+  }
+
+  function notifIcon(type) {
+    if (type === 'urgency_urgent')  return '🚨';
+    if (type === 'urgency_watch')   return '⚠️';
+    if (type === 'possible_closed') return '📁';
+    return '📋';
+  }
+
+  function notifCardClass(type) {
+    if (type === 'urgency_urgent')  return 'notif-card--urgent';
+    if (type === 'urgency_watch')   return 'notif-card--watch';
+    if (type === 'possible_closed') return 'notif-card--closed';
+    return 'notif-card--actuacion';
+  }
+
+  function formatNotifTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+           + ' ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+    } catch(e) { return iso || ''; }
+  }
+
+  function renderNotifications() {
+    const body = document.getElementById('notif-body');
+    updateNotifBadge();
+
+    if (!notifications.length) {
+      body.innerHTML = `
+        <div class="notif-empty">
+          <div class="notif-empty__icon">🔕</div>
+          <div class="notif-empty__text">Sin notificaciones pendientes.</div>
+        </div>`;
+      return;
+    }
+
+    // Agrupar por categoría
+    const groups = {};
+    notifications.forEach(n => {
+      const lbl = notifCategoryLabel(n);
+      if (!groups[lbl]) groups[lbl] = [];
+      groups[lbl].push(n);
+    });
+
+    const ORDER = [
+      'Contencioso — Amparo por Mora',
+      'Contencioso — Recurso Directo',
+      'Contencioso — Inconstitucionalidades',
+      'Contencioso Administrativo',
+      'Migraciones / Residencias',
+      'Ciudadanía',
+      'Derecho de Familia',
+      'General',
+    ];
+    const sortedGroups = Object.keys(groups).sort((a, b) => {
+      const ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+
+    body.innerHTML = sortedGroups.map(lbl => `
+      <div class="notif-group">
+        <div class="notif-group__title">${lbl} <span style="font-weight:400">(${groups[lbl].length})</span></div>
+        ${groups[lbl].map(n => `
+          <div class="notif-card ${notifCardClass(n.type)}">
+            <div class="notif-card__icon">${notifIcon(n.type)}</div>
+            <div class="notif-card__body">
+              <div class="notif-card__top">
+                <span class="notif-card__name">${n.clientName || '—'}</span>
+                <span class="notif-card__nro">${n.caseNumber || ''}</span>
+                <span class="notif-card__time">${formatNotifTime(n.timestamp)}</span>
+              </div>
+              <div class="notif-card__msg">${n.message || ''}</div>
+            </div>
+            <button class="notif-dismiss" onclick="dismissNotification('${n.id}')" title="Descartar">×</button>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  function dismissNotification(id) {
+    notifications = notifications.filter(n => n.id !== id);
+    saveNotifications();
+    renderNotifications();
+  }
+
+  function dismissAllNotifications() {
+    if (!notifications.length) return;
+    if (!confirm('¿Limpiar todas las notificaciones?')) return;
+    notifications = [];
+    saveNotifications();
+    renderNotifications();
+  }
+
+  function openNotifications() {
+    renderNotifications();
+    showView('view-notifications');
+  }
+
+  // ── Init & event wiring ────────────────────────────────────
+  async function init() {
+    await loadCases();
+    await loadNotifications();
+    loadJuzgadoNotes();
+    renderDashboard();
+    autoLoadResults();
+    updateNotifBadge();
+
+    // Si hay notificaciones pendientes, abrir el panel antes que el dashboard
+    if (notifications.length > 0) {
+      openNotifications();
+    }
+
+    // Auto-refresh every 30 seconds (pause when modal open)
+    _lastSync = Date.now();
+    setInterval(() => {
+      const modalOpen = document.getElementById('modal-overlay').classList.contains('open')
+                     || document.getElementById('modal-snippets').classList.contains('open');
+      if (modalOpen) return;
+      fetch('/cases?t=' + Date.now())
+        .then(r => r.json())
+        .then(fresh => {
+          const changed = JSON.stringify(fresh) !== JSON.stringify(cases);
+          if (changed) {
+            cases = fresh;
+            _lastSync = Date.now();
+            renderDashboard();
+            if (currentCategory) renderCaseList(currentCategory);
+          }
+        })
+        .catch(() => {});
+      fetch('/notifications?t=' + Date.now())
+        .then(r => r.json())
+        .then(fresh => {
+          if (JSON.stringify(fresh) !== JSON.stringify(notifications)) {
+            notifications = fresh;
+            updateNotifBadge();
+            const inNotifView = document.getElementById('view-notifications').classList.contains('active');
+            if (inNotifView) renderNotifications();
+          }
+        })
+        .catch(() => {});
+    }, 30000);
+
+    // Update "Actualizado hace Xs" every minute
+    setInterval(updateSyncInfo, 60000);
+
+    // Panel cards → open case list or contencioso sub-dashboard
+    document.querySelectorAll('.panel-card[data-category]').forEach(card => {
+      card.addEventListener('click', () => {
+        const cat = card.dataset.category;
+        if (cat === 'contencioso') openContencioso();
+        else openCaseList(cat);
+      });
+    });
+    // Contencioso sub-panel cards → open sub case list
+    document.querySelectorAll('.panel-card[data-subtipo]').forEach(card => {
+      card.addEventListener('click', () => openSubCaseList(card.dataset.subtipo));
+    });
+
+    // Contencioso: back to dashboard + kanban general
+    // Notifications panel
+    document.getElementById('notif-bell-btn').addEventListener('click', openNotifications);
+    document.getElementById('notif-back-btn').addEventListener('click', () => { renderDashboard(); showView('view-dashboard'); });
+    document.getElementById('notif-clear-all-btn').addEventListener('click', dismissAllNotifications);
+
+    document.getElementById('cont-back-btn').addEventListener('click', () => { renderDashboard(); showView('view-dashboard'); });
+    document.getElementById('cont-kanban-btn').addEventListener('click', () => {
+      // Kanban with all contencioso cases — use a combined view
+      currentCategory = 'constitutional';
+      currentSubTipo  = null;
+      openKanban('constitutional');
+    });
+
+    // Case list: back button
+    document.getElementById('list-back-btn').addEventListener('click', () => {
+      if (currentSubTipo) { currentSubTipo = null; openContencioso(); }
+      else { renderDashboard(); showView('view-dashboard'); }
+    });
+
+    // Case list: new case button
+    document.getElementById('new-case-btn').addEventListener('click', () => {
+      openModal({ category: currentCategory, mode: 'create' });
+    });
+    document.getElementById('new-case-empty-btn').addEventListener('click', () => {
+      openModal({ category: currentCategory, mode: 'create' });
+    });
+
+    // Case detail: back button
+    document.getElementById('detail-back-btn').addEventListener('click', () => {
+      if (currentSubTipo) openSubCaseList(currentSubTipo);
+      else openCaseList(currentCategory);
+    });
+
+    // Case detail: edit button
+    document.getElementById('edit-case-btn').addEventListener('click', () => {
+      openModal({ caseId: currentCaseId, mode: 'edit' });
+    });
+
+    // Case detail: delete button
+    document.getElementById('delete-case-btn').addEventListener('click', () => {
+      deleteCase(currentCaseId);
+    });
+
+    // Modal: close / cancel
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+
+    // Modal: save
+    document.getElementById('modal-save-btn').addEventListener('click', handleFormSubmit);
+
+    // Modal: close on backdrop click
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modal-overlay')) closeModal();
+    });
+
+    // Keyboard: Escape closes modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Search
+    document.getElementById('case-search').addEventListener('input', () => {
+      if (currentCategory) renderCaseList(currentCategory);
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        if (currentCategory) renderCaseList(currentCategory);
+      });
+    });
+
+    // Export button
+    document.getElementById('export-btn').addEventListener('click', exportSummary);
+
+    // Calendar
+    document.getElementById('open-calendar-btn').addEventListener('click', openCalendar);
+    document.getElementById('cal-back-btn').addEventListener('click', () => { renderDashboard(); showView('view-dashboard'); });
+    document.getElementById('cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
+    document.getElementById('cal-next').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
+
+    // Kanban
+    document.getElementById('kanban-toggle-btn').addEventListener('click', () => openKanban(currentCategory));
+    document.getElementById('kanban-back-btn').addEventListener('click', () => openCaseList(currentCategory));
+
+    // Snippets modal
+    document.getElementById('snippets-close-btn').addEventListener('click', closeSnippets);
+    document.getElementById('snippets-close-btn2').addEventListener('click', closeSnippets);
+    document.getElementById('snippet-copy-btn').addEventListener('click', copySnippet);
+    document.getElementById('modal-snippets').addEventListener('click', e => {
+      if (e.target === document.getElementById('modal-snippets')) closeSnippets();
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
