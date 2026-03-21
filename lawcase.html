@@ -88,14 +88,19 @@
       font-weight: 500;
       z-index: 9999;
       opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.2s, transform 0.2s;
       pointer-events: none;
+      display: none;
     }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .toast--ok  { background: rgba(63,185,80,0.15); border: 1px solid rgba(63,185,80,0.4); color: var(--success); }
-    .toast--err { background: rgba(248,81,73,0.15); border: 1px solid rgba(248,81,73,0.4); color: var(--danger); }
-    .toast--info{ background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.35); color: var(--accent); }
+    .toast.show {
+      display: block;
+      animation: toastIn 220ms ease forwards;
+    }
+    .toast.removing {
+      animation: toastOut 180ms ease forwards;
+    }
+    .toast--ok  { background: rgba(63,185,80,0.10);  color: var(--success); border-bottom: 1px solid rgba(63,185,80,0.3); }
+    .toast--err { background: rgba(239,68,68,0.10);  color: var(--danger);  border-bottom: 1px solid rgba(239,68,68,0.3); }
+    .toast--info{ background: rgba(184,151,90,0.10); color: var(--accent);  border-bottom: 1px solid rgba(184,151,90,0.3); }
 
     /* ── Urgency banner ────────────────────────────────────────── */
     .urgency-banner {
@@ -1686,10 +1691,16 @@
   let _toastTimer = null;
   function showToast(msg, type = 'ok') {
     const el = document.getElementById('toast');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    el.classList.remove('removing');
     el.textContent = msg;
     el.className = `toast toast--${type} show`;
-    if (_toastTimer) clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+    _toastTimer = setTimeout(() => {
+      el.classList.add('removing');
+      setTimeout(() => {
+        el.classList.remove('show', 'removing');
+      }, 190);
+    }, 3000);
   }
 
   // ── Urgency banner ─────────────────────────────────────────
