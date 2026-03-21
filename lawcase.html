@@ -4,29 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NegroLex</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ── Reset & base ─────────────────────────────────────────── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-base:        #0d1117;
-      --bg-surface:     #161b22;
-      --bg-raised:      #1c2333;
-      --bg-hover:       #21262d;
-      --accent:         #c9a84c;
+      --bg:             #080c14;
+      --bg-topbar:      #0a0f1c;
+      /* Legacy aliases — no agregar nuevos usos, son para compatibilidad */
+      --bg-base:        #080c14;
+      --bg-surface:     #080c14;
+      --bg-raised:      #080c14;
+      --bg-hover:       rgba(255,255,255,0.04);
+      /* Accent */
+      --accent:         #b8975a;
       --accent-dim:     #8a6e2f;
-      --text-primary:   #e6edf3;
-      --text-secondary: #8b949e;
-      --danger:         #f85149;
+      /* Text */
+      --text-primary:   #e2e8f0;
+      --text-secondary: #64748b;
+      --text-muted:     #475569;
+      /* State */
+      --danger:         #ef4444;
       --warning:        #d29922;
       --success:        #3fb950;
-      --border:         #30363d;
+      /* Separators */
+      --border:         #1a2235;
+      --separator:      #1a2235;
     }
 
     body {
       background: var(--bg-base);
       color: var(--text-primary);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 16px;
       min-height: 100vh;
     }
