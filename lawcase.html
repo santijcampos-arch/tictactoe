@@ -2065,9 +2065,10 @@
     if (activos.length === 0) {
       dd.innerHTML = '<div class="p-case-option disabled">(sin casos activos)</div>';
     } else {
-      dd.innerHTML = activos.map(c =>
-        `<div class="p-case-option" onclick="selectCase('${esc(c.id)}','${esc(c.clientName + (c.caseTitle ? ' — '+c.caseTitle : ''))}')">${esc(c.clientName)}${c.caseTitle ? ' — ' + esc(c.caseTitle) : ''}</div>`
-      ).join('');
+      dd.innerHTML = activos.map(c => {
+        const nombre = c.clientName + (c.caseTitle ? ' — ' + c.caseTitle : '');
+        return `<div class="p-case-option" onclick="selectCase(${JSON.stringify(c.id)},${JSON.stringify(nombre)})">${esc(c.clientName)}${c.caseTitle ? ' — ' + esc(c.caseTitle) : ''}</div>`;
+      }).join('');
     }
     dd.classList.add('open');
   }
