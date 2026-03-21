@@ -1286,6 +1286,10 @@
 <div class="app-header">
   <h1>⚖ NegroLex</h1>
   <span class="subtitle" id="header-context">Panel de Control</span>
+  <button class="pendientes-btn" id="pendientes-btn" title="Pendientes" onclick="togglePendientes()">
+    📋 Pendientes
+    <span class="p-badge" id="pendientes-badge"></span>
+  </button>
   <button class="notif-bell-btn" id="notif-bell-btn" title="Notificaciones">
     🔔
     <span class="notif-bell-badge" id="notif-bell-badge"></span>
@@ -1295,6 +1299,39 @@
 
 <!-- ═══ TOAST ════════════════════════════════════════════════ -->
 <div id="toast" class="toast"></div>
+
+<!-- ═══ PENDIENTES OVERLAY + PANEL ═══════════════════════════ -->
+<div class="pendientes-overlay" id="pendientes-overlay" onclick="closePendientes()"></div>
+
+<div class="pendientes-panel" id="pendientes-panel">
+
+  <div class="p-header">
+    <div class="p-title">Pendientes</div>
+    <div class="p-tabs">
+      <div class="p-tab active" id="p-tab-activos" onclick="switchPTab('activos')">Activos</div>
+      <div class="p-tab" id="p-tab-historial" onclick="switchPTab('historial')">Historial</div>
+    </div>
+  </div>
+
+  <div class="p-input-area" id="p-input-area">
+    <div class="p-input-row">
+      <input class="p-input" id="p-new-input" placeholder="Nuevo pendiente..." onkeydown="if(event.key==='Enter')addPendiente()">
+      <button class="p-add-btn" onclick="addPendiente()" title="Agregar">+</button>
+    </div>
+    <div class="p-link-case-row" id="p-link-case-row">
+      <button class="p-link-case-btn" id="p-link-case-btn" onclick="toggleCaseDropdown()">⊕ Vincular a un caso (opcional)</button>
+      <div class="p-linked-case" id="p-linked-case-display" style="display:none">
+        <span id="p-linked-case-name"></span>
+        <button class="p-unlink-btn" onclick="unlinkCase()" title="Desvincular">×</button>
+      </div>
+      <div class="p-case-dropdown" id="p-case-dropdown"></div>
+    </div>
+  </div>
+
+  <div class="p-list" id="p-list-activos"></div>
+  <div class="p-list" id="p-list-historial" style="display:none"></div>
+
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════
      NOTIFICATIONS VIEW
