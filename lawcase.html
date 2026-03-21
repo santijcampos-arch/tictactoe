@@ -1023,6 +1023,80 @@
       .app-header { padding: 14px 16px; }
       .app-header h1 { font-size: 1.05rem; letter-spacing: 2px; }
     }
+
+    /* ══ ANIMACIONES ═══════════════════════════════════════════ */
+
+    /* Área 1 — Cambios de vista */
+    @keyframes viewEnter {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .view-enter {
+      animation: viewEnter 250ms ease forwards;
+    }
+
+    /* Área 2 — Entrada de filas en listas (stagger) */
+    @keyframes itemEnter {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .item-enter {
+      opacity: 0;
+      animation: itemEnter 220ms ease forwards;
+    }
+
+    /* Área 3 — Hover en filas de tabla y botones */
+    .case-table tbody tr {
+      transition: color 150ms ease;
+    }
+    .case-table tbody tr:hover td { color: var(--text-primary); }
+
+    .btn {
+      transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+    }
+    button:not(.btn):not(.back-btn):not(.modal-close) {
+      transition: opacity 150ms ease, color 150ms ease;
+    }
+    button:not(.btn):not(.back-btn):not(.modal-close):hover {
+      opacity: 0.85;
+    }
+
+    /* Área 4 — Banner de urgencia */
+    @keyframes bannerSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bannerSlideOut {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(-6px); }
+    }
+    .urgency-banner.visible {
+      animation: bannerSlideIn 280ms ease forwards;
+    }
+    .urgency-banner.removing {
+      animation: bannerSlideOut 200ms ease forwards;
+    }
+
+    /* Área 5 — Toasts */
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(6px); }
+    }
+
+    /* Área 6 — Dashboard counters: la animación se aplica via JS */
+
+    /* Accesibilidad: respetar preferencia de movimiento reducido */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
