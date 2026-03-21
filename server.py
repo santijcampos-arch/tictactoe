@@ -24,6 +24,42 @@ SHEET_NAME       = 'Sheet1'
 CONST_SHEET_ID   = '1H0KSyS8hZxikozppoIIn0cM33fBJhboPQ7LvE28JSds'
 CONST_SHEET_NAME = 'Contencioso Administrativo'
 
+CASES_LOCK = CASES_FILE + '.lock'
+NOTIF_LOCK = NOTIF_FILE + '.lock'
+
+def _acquire_lock(lock_path, timeout=10):
+    """Adquiere un lock file cross-process via os.O_EXCL (atómico en Windows)."""
+    import time
+    start = time.time()
+    while True:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            return True
+        except FileExistsError:
+            if time.time() - start > timeout:
+                return False
+            time.sleep(0.05)
+
+def _release_lock(lock_path):
+    try:
+        os.unlink(lock_path)
+    except OSError:
+        pass
+
+def _atomic_write(path, data):
+    """Escribe data (list/dict) en path de forma atómica via archivo temporal."""
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)
+
+def _backup(path):
+    """Copia path a path.bak si existe."""
+    if os.path.exists(path):
+        import shutil
+        shutil.copy2(path, path + '.bak')
+
 # ── Google Sheets ───────────────────────────────────────────────────────────
 
 def get_sheets_service(write=False):
@@ -227,8 +263,14 @@ def sync_from_sheet():
     except Exception as e:
         print(f"  Constitucional: error — {e}")
 
-    with open(CASES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(existing, f, ensure_ascii=False, indent=2)
+    _backup(CASES_FILE)
+    if _acquire_lock(CASES_LOCK):
+        try:
+            _atomic_write(CASES_FILE, existing)
+        finally:
+            _release_lock(CASES_LOCK)
+    else:
+        print("  [WARN] No se pudo adquirir el lock de cases.json — sync omitido")
 
     print(f"  Sincronizado: {len(existing)} casos totales ({added} nuevos).")
 
@@ -279,8 +321,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     threading.Thread(target=sync, daemon=True).start()
                 except Exception:
                     pass
-            with open(CASES_FILE, 'w', encoding='utf-8') as f:
-                f.write(body)
+            if _acquire_lock(CASES_LOCK):
+                try:
+                    _atomic_write(CASES_FILE, new_cases)
+                finally:
+                    _release_lock(CASES_LOCK)
             self._json(200, b'{"ok":true}')
         elif self.path == '/pjn-update':
             length = int(self.headers.get('Content-Length', 0))
@@ -302,14 +347,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         updated = True
                         break
                 if updated:
-                    with open(CASES_FILE, 'w', encoding='utf-8') as f:
-                        json.dump(cases, f, ensure_ascii=False, indent=2)
+                    if _acquire_lock(CASES_LOCK):
+                        try:
+                            _atomic_write(CASES_FILE, cases)
+                        finally:
+                            _release_lock(CASES_LOCK)
             self._json(200, json.dumps({'ok': updated, 'updated': updated}).encode())
         elif self.path == '/notifications':
             length = int(self.headers.get('Content-Length', 0))
             body   = self.rfile.read(length).decode('utf-8')
-            with open(NOTIF_FILE, 'w', encoding='utf-8') as f:
-                f.write(body)
+            notif_data = json.loads(body)
+            if _acquire_lock(NOTIF_LOCK):
+                try:
+                    _atomic_write(NOTIF_FILE, notif_data)
+                finally:
+                    _release_lock(NOTIF_LOCK)
             self._json(200, b'{"ok":true}')
         elif self.path == '/open-pjn':
             length = int(self.headers.get('Content-Length', 0))
