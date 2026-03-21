@@ -2091,6 +2091,34 @@
     document.getElementById('p-case-dropdown').classList.remove('open');
   }
 
+  function togglePendientes() {
+    const panel = document.getElementById('pendientes-panel');
+    if (panel.classList.contains('open')) closePendientes();
+    else openPendientes();
+  }
+
+  function openPendientes() {
+    const panel = document.getElementById('pendientes-panel');
+    const overlay = document.getElementById('pendientes-overlay');
+    panel.classList.remove('closing');
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    renderPendientes();
+    // Always reset to activos tab on open (intentional UX decision: fresh start each time)
+    switchPTab('activos');
+    document.getElementById('p-new-input').focus();
+  }
+
+  function closePendientes() {
+    const panel = document.getElementById('pendientes-panel');
+    const overlay = document.getElementById('pendientes-overlay');
+    panel.classList.add('closing');
+    overlay.classList.remove('open');
+    setTimeout(() => {
+      panel.classList.remove('open', 'closing');
+    }, 180);
+  }
+
   function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
@@ -2330,6 +2358,7 @@
   };
 
   function showView(id) {
+    closePendientes();
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const el = document.getElementById(id);
     el.classList.add('active');
@@ -3864,6 +3893,12 @@
     document.getElementById('snippet-copy-btn').addEventListener('click', copySnippet);
     document.getElementById('modal-snippets').addEventListener('click', e => {
       if (e.target === document.getElementById('modal-snippets')) closeSnippets();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#p-link-case-row')) {
+        document.getElementById('p-case-dropdown')?.classList.remove('open');
+      }
     });
   }
 
