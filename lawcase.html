@@ -1863,6 +1863,10 @@
 
   // ── State ──────────────────────────────────────────────────
   let cases = [];
+  let pendientes = [];
+  let _pendienteTab = 'activos';
+  let _newPendienteCasoId = null;
+  let _newPendienteCasoNombre = null;
   let currentCategory = null;
   let currentCaseId   = null;
   let activeFilter    = 'all';
@@ -1894,6 +1898,29 @@
       }).catch(() => {});
     }
     localStorage.setItem('lawcases', JSON.stringify(cases));
+  }
+
+  async function loadPendientes() {
+    if (USE_SERVER) {
+      try {
+        const r = await fetch('/pendientes');
+        pendientes = await r.json();
+        return;
+      } catch(e) {}
+    }
+    try { pendientes = JSON.parse(localStorage.getItem('negrolex_pendientes') || '[]'); }
+    catch(e) { pendientes = []; }
+  }
+
+  function savePendientes() {
+    if (USE_SERVER) {
+      fetch('/pendientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendientes)
+      }).catch(() => {});
+    }
+    localStorage.setItem('negrolex_pendientes', JSON.stringify(pendientes));
   }
 
   function generateId() {
@@ -3514,6 +3541,8 @@
   // ── Init & event wiring ────────────────────────────────────
   async function init() {
     await loadCases();
+    await loadPendientes();
+    updatePendientesBadge();
     await loadNotifications();
     loadJuzgadoNotes();
     renderDashboard();
