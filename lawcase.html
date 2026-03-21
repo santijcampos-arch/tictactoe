@@ -2111,6 +2111,7 @@
 
   function closePendientes() {
     const panel = document.getElementById('pendientes-panel');
+    if (!panel.classList.contains('open')) return;
     const overlay = document.getElementById('pendientes-overlay');
     panel.classList.add('closing');
     overlay.classList.remove('open');
