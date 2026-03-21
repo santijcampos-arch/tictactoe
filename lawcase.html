@@ -2149,6 +2149,12 @@
       tr.addEventListener('click', () => openCaseDetail(c.id));
       tbody.appendChild(tr);
     });
+
+    // Stagger animation — solo primeros 8 items
+    Array.from(tbody.querySelectorAll('tr')).slice(0, 8).forEach((row, i) => {
+      row.classList.add('item-enter');
+      row.style.animationDelay = `${i * 40}ms`;
+    });
   }
 
   // ── Open case detail ───────────────────────────────────────
