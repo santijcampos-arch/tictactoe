@@ -2011,6 +2011,85 @@
     if (tabActivos) tabActivos.textContent = `Activos (${activos.length})`;
   }
 
+  function addPendiente() {
+    const input = document.getElementById('p-new-input');
+    if (!input) return;
+    const texto = input.value.trim();
+    if (!texto) return;
+    const item = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      texto,
+      casoId: _newPendienteCasoId || null,
+      urgente: false,
+      creadoEn: new Date().toISOString(),
+      completadoEn: null
+    };
+    pendientes.push(item);
+    savePendientes();
+    renderPendientes();
+    input.value = '';
+    unlinkCase(); // reset linked case
+    input.focus();
+  }
+
+  function completarPendiente(id) {
+    const item = pendientes.find(p => p.id === id);
+    if (!item) return;
+    item.completadoEn = new Date().toISOString();
+    savePendientes();
+    renderPendientes();
+  }
+
+  function toggleUrgencia(id) {
+    const item = pendientes.find(p => p.id === id);
+    if (!item) return;
+    item.urgente = !item.urgente;
+    savePendientes();
+    renderPendientes();
+  }
+
+  function switchPTab(tab) {
+    _pendienteTab = tab;
+    document.getElementById('p-tab-activos').classList.toggle('active', tab === 'activos');
+    document.getElementById('p-tab-historial').classList.toggle('active', tab === 'historial');
+    document.getElementById('p-list-activos').style.display = tab === 'activos' ? '' : 'none';
+    document.getElementById('p-list-historial').style.display = tab === 'historial' ? '' : 'none';
+  }
+
+  function toggleCaseDropdown() {
+    const dd = document.getElementById('p-case-dropdown');
+    const isOpen = dd.classList.contains('open');
+    if (isOpen) { dd.classList.remove('open'); return; }
+    // Populate dropdown
+    const activos = cases.filter(c => c.status !== 'closed');
+    if (activos.length === 0) {
+      dd.innerHTML = '<div class="p-case-option disabled">(sin casos activos)</div>';
+    } else {
+      dd.innerHTML = activos.map(c =>
+        `<div class="p-case-option" onclick="selectCase('${esc(c.id)}','${esc(c.clientName + (c.caseTitle ? ' — '+c.caseTitle : ''))}')">${esc(c.clientName)}${c.caseTitle ? ' — ' + esc(c.caseTitle) : ''}</div>`
+      ).join('');
+    }
+    dd.classList.add('open');
+  }
+
+  function selectCase(id, nombre) {
+    _newPendienteCasoId = id;
+    _newPendienteCasoNombre = nombre;
+    document.getElementById('p-link-case-btn').style.display = 'none';
+    const display = document.getElementById('p-linked-case-display');
+    display.style.display = 'flex';
+    document.getElementById('p-linked-case-name').textContent = nombre;
+    document.getElementById('p-case-dropdown').classList.remove('open');
+  }
+
+  function unlinkCase() {
+    _newPendienteCasoId = null;
+    _newPendienteCasoNombre = null;
+    document.getElementById('p-link-case-btn').style.display = '';
+    document.getElementById('p-linked-case-display').style.display = 'none';
+    document.getElementById('p-case-dropdown').classList.remove('open');
+  }
+
   function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
