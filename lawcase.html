@@ -836,6 +836,10 @@
     .kanban-layout { display: flex; gap: 16px; align-items: flex-start; }
     .kanban-layout .kanban-board { flex: 1; min-width: 0; }
     .heatmap-sidebar { flex: 0 0 200px; border-left: 1px solid var(--separator); padding: 0 0 14px 16px; max-height: 75vh; overflow-y: auto; }
+    .kanban-col__cards::-webkit-scrollbar,
+    .heatmap-sidebar::-webkit-scrollbar,
+    .kanban-board::-webkit-scrollbar { display: none; }
+    .kanban-col__cards, .heatmap-sidebar, .kanban-board { scrollbar-width: none; }
     .heatmap-sidebar__title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 12px; }
     .heatmap-item { padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: opacity 0.15s; }
     .heatmap-item:last-child { border-bottom: none; }
