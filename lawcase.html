@@ -240,6 +240,8 @@
       font-size: 1.8rem;
       margin-bottom: 12px;
     }
+    svg.icon { vertical-align: -0.125em; }
+    .panel-card__icon svg.icon { display: block; vertical-align: 0; }
     .panel-card__title {
       font-size: 1.05rem;
       font-weight: 600;
@@ -778,50 +780,42 @@
       align-items: flex-start;
     }
     .kanban-col {
-      flex: 0 0 210px;
-      background: var(--bg-raised);
-      border-radius: 10px;
-      border: 1px solid var(--border);
+      flex: 0 0 185px;
       display: flex;
       flex-direction: column;
       max-height: 75vh;
     }
     .kanban-col__header {
-      padding: 10px 14px;
-      font-size: 0.75rem;
+      padding: 0 0 10px 0;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.07em;
+      border-bottom: 2px solid currentColor;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
+      margin-bottom: 12px;
     }
     .kanban-col__count {
-      background: var(--bg-surface);
-      border-radius: 10px;
-      padding: 1px 7px;
-      font-size: 0.7rem;
-      color: var(--text-secondary);
+      font-size: 0.75rem;
       font-weight: 600;
+      opacity: 0.6;
     }
     .kanban-col__cards {
-      padding: 8px;
+      padding: 0;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 0;
     }
     .kanban-card {
-      background: var(--bg-surface);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      padding: 10px 12px;
+      padding: 9px 0;
       cursor: pointer;
-      transition: border-color 0.2s, transform 0.1s;
+      border-bottom: 1px solid var(--separator);
     }
-    .kanban-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .kanban-card:last-child { border-bottom: none; }
     .kanban-card__name { font-size: 0.81rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
     .kanban-card__nro  { font-size: 0.7rem; color: var(--text-secondary); font-family: monospace; margin-bottom: 6px; }
     .kanban-card__footer { display: flex; justify-content: space-between; align-items: center; }
@@ -837,16 +831,11 @@
     .kanban-card__dot--yellow { background: var(--warning); box-shadow: 0 0 4px rgba(210,153,34,0.5); }
     .kanban-card__dot--green  { background: var(--success); }
     .kanban-card__dot--none   { background: var(--border); }
-    .kanban-card__progress { height: 3px; background: var(--border); border-radius: 2px; margin: 7px 0 5px; overflow: hidden; }
-    .kanban-card__progress-fill { height: 100%; border-radius: 2px; }
-    .kanban-card__actions { display: flex; gap: 2px; margin-top: 4px; }
-    .kanban-quick-btn { background: none; border: 1px solid transparent; cursor: pointer; font-size: 0.78rem; padding: 2px 5px; border-radius: 4px; opacity: 0.55; transition: opacity 0.15s, background 0.15s, border-color 0.15s; }
-    .kanban-quick-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
 
     /* Kanban layout with heatmap sidebar */
     .kanban-layout { display: flex; gap: 16px; align-items: flex-start; }
     .kanban-layout .kanban-board { flex: 1; min-width: 0; }
-    .heatmap-sidebar { flex: 0 0 220px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px; max-height: 75vh; overflow-y: auto; }
+    .heatmap-sidebar { flex: 0 0 200px; border-left: 1px solid var(--separator); padding: 0 0 14px 16px; max-height: 75vh; overflow-y: auto; }
     .heatmap-sidebar__title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 12px; }
     .heatmap-item { padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: opacity 0.15s; }
     .heatmap-item:last-child { border-bottom: none; }
@@ -1284,14 +1273,14 @@
 
 <!-- ═══ GLOBAL HEADER (único, sticky) ═══════════════════════ -->
 <div class="app-header">
-  <h1>⚖ NegroLex</h1>
+  <h1><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21H5a2 2 0 0 1-2-2v-1h4v1a2 2 0 0 0 4 0v-1h4v1a2 2 0 0 1-2 2h-2"/><path d="M12 2v19"/><line x1="6" x2="18" y1="7" y2="7"/></svg> NegroLex</h1>
   <span class="subtitle" id="header-context">Panel de Control</span>
   <button class="pendientes-btn" id="pendientes-btn" title="Pendientes" onclick="togglePendientes()">
-    📋 Pendientes
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Pendientes
     <span class="p-badge" id="pendientes-badge"></span>
   </button>
   <button class="notif-bell-btn" id="notif-bell-btn" title="Notificaciones">
-    🔔
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
     <span class="notif-bell-badge" id="notif-bell-badge"></span>
   </button>
   <span class="sync-info" id="sync-info"></span>
@@ -1319,7 +1308,7 @@
       <button class="p-add-btn" onclick="addPendiente()" title="Agregar">+</button>
     </div>
     <div class="p-link-case-row" id="p-link-case-row">
-      <button class="p-link-case-btn" id="p-link-case-btn" onclick="toggleCaseDropdown()">⊕ Vincular a un caso (opcional)</button>
+      <button class="p-link-case-btn" id="p-link-case-btn" onclick="toggleCaseDropdown()"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg> Vincular a un caso (opcional)</button>
       <div class="p-linked-case" id="p-linked-case-display" style="display:none">
         <span id="p-linked-case-name"></span>
         <button class="p-unlink-btn" onclick="unlinkCase()" title="Desvincular">×</button>
@@ -1355,19 +1344,19 @@
 <div id="view-dashboard" class="view active">
   <div class="page-body">
     <div id="urgency-banner" class="urgency-banner">
-      <div class="urgency-banner__title">⚡ Requieren atención hoy</div>
+      <div class="urgency-banner__title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Requieren atención hoy</div>
       <div class="urgency-banner__items" id="urgency-banner-items"></div>
     </div>
     <div class="dashboard-intro">
       <h2>Panel de Control</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn--secondary" id="open-calendar-btn">📅 Calendario</button>
+        <button class="btn btn--secondary" id="open-calendar-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg> Calendario</button>
       </div>
     </div>
     <div class="panel-grid">
 
       <div class="panel-card" data-category="citizenship">
-        <div class="panel-card__icon">🏛</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg></div>
         <div class="panel-card__title">Ciudadanía</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1386,7 +1375,7 @@
       </div>
 
       <div class="panel-card" data-category="migration">
-        <div class="panel-card__icon">✈</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-2 0-2 2-3.5 3.5L8 11l-2.8-.8L4 12l8 2 2 8 1.2-1.2z"/></svg></div>
         <div class="panel-card__title">Migraciones / Residencias</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1405,7 +1394,7 @@
       </div>
 
       <div class="panel-card" data-category="family">
-        <div class="panel-card__icon">👨‍👩‍👧</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div class="panel-card__title">Derecho de Familia</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1424,7 +1413,7 @@
       </div>
 
       <div class="panel-card" data-category="contencioso">
-        <div class="panel-card__icon">⚖️</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21H5a2 2 0 0 1-2-2v-1h4v1a2 2 0 0 0 4 0v-1h4v1a2 2 0 0 1-2 2h-2"/><path d="M12 2v19"/><line x1="6" x2="18" y1="7" y2="7"/></svg></div>
         <div class="panel-card__title">Contencioso Administrativo</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1458,8 +1447,8 @@
         <span class="category-badge" id="list-badge"></span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn btn--secondary" id="kanban-toggle-btn" style="display:none;">📋 Kanban</button>
-        <button class="btn btn--secondary" id="export-btn">🖨️ Exportar</button>
+        <button class="btn btn--secondary" id="kanban-toggle-btn" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg> Kanban</button>
+        <button class="btn btn--secondary" id="export-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg> Exportar</button>
         <button class="btn btn--primary" id="new-case-btn">+ Nuevo Caso</button>
       </div>
     </div>
@@ -1505,8 +1494,8 @@
         <h2 id="detail-heading">Detalle del caso</h2>
       </div>
       <div style="display:flex;gap:10px;">
-        <button class="btn btn--secondary" id="snippets-btn" style="display:none;">✍ Escritos</button>
-        <a class="btn btn--secondary" id="pjn-link-btn" href="#" target="_blank" style="display:none;text-decoration:none;">🔗 Ver en PJN</a>
+        <button class="btn btn--secondary" id="snippets-btn" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Escritos</button>
+        <a class="btn btn--secondary" id="pjn-link-btn" href="#" target="_blank" style="display:none;text-decoration:none;"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg> Ver en PJN</a>
         <button class="btn btn--secondary" id="edit-case-btn">Editar</button>
         <button class="btn btn--danger" id="delete-case-btn">Eliminar</button>
       </div>
@@ -1552,7 +1541,7 @@
           <span id="detail-dias-mov">—</span>
         </div>
         <div id="detail-precaria-block" class="precaria-block precaria-block--none">
-          <div class="precaria-block__icon">📅</div>
+          <div class="precaria-block__icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></div>
           <div>
             <div class="precaria-block__label">Vencimiento Precaria</div>
             <div class="precaria-block__date" id="detail-next-deadline">—</div>
@@ -1577,14 +1566,14 @@
         </div>
         <div class="detail-field full-width" id="detail-juzgado-note-section" style="display:none;">
           <div class="juzgado-note-card">
-            <label id="detail-juzgado-note-label">📌 Nota del juzgado</label>
+            <label id="detail-juzgado-note-label"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> Nota del juzgado</label>
             <textarea id="detail-juzgado-note-input" placeholder="Escribí acá lo que sabés de este juzgado..."></textarea>
           </div>
         </div>
         <div class="detail-field full-width" id="detail-documento-section" style="display:none;">
           <label>Precaria / Intimación / Disposición</label>
           <a id="detail-documento-link" href="#" target="_blank" class="btn btn--secondary" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
-            📄 Ver documento
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg> Ver documento
           </a>
         </div>
         <div class="detail-field full-width" id="detail-intimaciones-section" style="display:none;">
@@ -1651,12 +1640,12 @@
         <button class="back-btn" id="cont-back-btn">← Volver al panel</button>
         <h2>Contencioso Administrativo</h2>
       </div>
-      <button class="btn btn--secondary" id="cont-kanban-btn">📋 Kanban general</button>
+      <button class="btn btn--secondary" id="cont-kanban-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg> Kanban general</button>
     </div>
     <div class="panel-grid">
 
       <div class="panel-card" data-subtipo="inconstitucionalidad">
-        <div class="panel-card__icon">📜</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg></div>
         <div class="panel-card__title">Inconstitucionalidades</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1675,7 +1664,7 @@
       </div>
 
       <div class="panel-card" data-subtipo="amparo_mora">
-        <div class="panel-card__icon">🛡️</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <div class="panel-card__title">Amparo por Mora DNM</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1694,7 +1683,7 @@
       </div>
 
       <div class="panel-card" data-subtipo="recurso_directo">
-        <div class="panel-card__icon">📁</div>
+        <div class="panel-card__icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></div>
         <div class="panel-card__title">Recurso Directo DNM</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
@@ -1835,7 +1824,7 @@
 <div id="modal-snippets">
   <div class="snippets-box">
     <div class="snippets-header">
-      <h3>✍ Generador de Escritos</h3>
+      <h3><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Generador de Escritos</h3>
       <button class="modal-close" id="snippets-close-btn">&times;</button>
     </div>
     <div class="snippets-tabs" id="snippet-tabs"></div>
@@ -1845,12 +1834,45 @@
     </div>
     <div class="snippets-footer">
       <button class="btn btn--secondary" id="snippets-close-btn2">Cerrar</button>
-      <button class="btn btn--primary" id="snippet-copy-btn">📋 Copiar</button>
+      <button class="btn btn--primary" id="snippet-copy-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copiar</button>
     </div>
   </div>
 </div>
 
 <script>
+  // ── Icon helper ───────────────────────────────────────────
+  const ICON_PATHS = {
+    scale:         `<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21H5a2 2 0 0 1-2-2v-1h4v1a2 2 0 0 0 4 0v-1h4v1a2 2 0 0 1-2 2h-2"/><path d="M12 2v19"/><line x1="6" x2="18" y1="7" y2="7"/>`,
+    bell:          `<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>`,
+    'bell-off':    `<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" x2="22" y1="2" y2="22"/>`,
+    'clipboard-list': `<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>`,
+    copy:          `<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`,
+    calendar:      `<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>`,
+    landmark:      `<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>`,
+    plane:         `<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-2 0-2 2-3.5 3.5L8 11l-2.8-.8L4 12l8 2 2 8 1.2-1.2z"/>`,
+    users:         `<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`,
+    folder:        `<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>`,
+    'file-text':   `<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/>`,
+    shield:        `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`,
+    printer:       `<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>`,
+    'pen-line':    `<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>`,
+    'external-link': `<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/>`,
+    file:          `<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>`,
+    'map-pin':     `<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>`,
+    zap:           `<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`,
+    'triangle-alert': `<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>`,
+    'circle-check': `<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>`,
+    'alert-circle': `<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>`,
+    'circle-plus': `<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/>`,
+    link:          `<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>`,
+    'layout-grid': `<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>`,
+    check:         `<polyline points="20 6 9 17 4 12"/>`,
+  };
+  function icon(name, size = 14) {
+    const p = ICON_PATHS[name] || '';
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon">${p}</svg>`;
+  }
+
   // ── Constants ─────────────────────────────────────────────
   const CATEGORIES = {
     citizenship:    'Ciudadanía',
@@ -1966,7 +1988,7 @@
         return c ? esc(c.clientName + (c.caseTitle ? ' — ' + c.caseTitle : '')) : null;
       })() : null;
       const metaHtml = casoNombre
-        ? `<span class="p-meta"><span class="p-case-link" onclick="openCaseDetail('${esc(p.casoId)}');showView('view-case-detail')">📁 ${casoNombre}</span></span>`
+        ? `<span class="p-meta"><span class="p-case-link" onclick="openCaseDetail('${esc(p.casoId)}');showView('view-case-detail')">${icon('folder',12)} ${casoNombre}</span></span>`
         : `<span class="p-meta">Sin caso</span>`;
       // Note: no explicit closePendientes() here — showView() already calls it (wired in Task 7 Step 2)
       return `
@@ -2176,7 +2198,7 @@
     if (overdue.length > 0) {
       overdue.slice(0, 3).forEach(c => {
         const p = computePlazo(c);
-        items.push({ text: `⚡ ${c.clientName} — ${p.suggestion}`, id: c.id });
+        items.push({ text: `${icon('zap',12)} ${c.clientName} — ${p.suggestion}`, id: c.id });
       });
     }
 
@@ -2185,13 +2207,13 @@
     precarias.forEach(c => {
       const d = daysUntil(c.nextDeadline);
       const txt = d === 0 ? '¡vence hoy!' : `vence en ${d}d`;
-      items.push({ text: `📅 ${c.clientName} — precaria ${txt}`, id: c.id });
+      items.push({ text: `${icon('calendar',12)} ${c.clientName} — precaria ${txt}`, id: c.id });
     });
 
     // Casos posiblemente cerrados (sin alertar dos veces)
     const closed = cases.filter(c => c.possibleClosed && (c.category === 'constitutional' || c.category === 'amparo'));
     if (closed.length > 0) {
-      items.push({ text: `⚠ ${closed.length} caso${closed.length > 1 ? 's' : ''} posiblemente cerrado${closed.length > 1 ? 's' : ''} — revisar en PJN`, id: null, action: () => openContencioso() });
+      items.push({ text: `${icon('triangle-alert',12)} ${closed.length} caso${closed.length > 1 ? 's' : ''} posiblemente cerrado${closed.length > 1 ? 's' : ''} — revisar en PJN`, id: null, action: () => openContencioso() });
     }
 
     const banner = document.getElementById('urgency-banner');
@@ -2577,7 +2599,7 @@
             else desc = raw.replace(/[^\n]+:\n/g, '').replace(/\n/g, ' ').trim().slice(0, 80);
           }
           ultimaHtml = `
-            ${c.lastActionDate ? `<span class="ultima-fecha">📅 ${c.lastActionDate}</span>` : ''}
+            ${c.lastActionDate ? `<span class="ultima-fecha">${icon('calendar',11)} ${c.lastActionDate}</span>` : ''}
             ${desc ? `<span class="ultima-desc" title="${esc(desc)}">${esc(desc.slice(0,60))}${desc.length>60?'…':''}</span>` : ''}
           `;
         }
@@ -2593,7 +2615,7 @@
           }
         }
 
-        const closedBadge = c.possibleClosed ? `<span class="badge-closed" title="${esc(c.possibleClosedReason||'')}">⚠ cerrado?</span>` : '';
+        const closedBadge = c.possibleClosed ? `<span class="badge-closed" title="${esc(c.possibleClosedReason||'')}">${icon('triangle-alert',11)} cerrado?</span>` : '';
         tr.innerHTML = `
           <td>${sinMovHtml}</td>
           <td class="client-name">${esc(c.clientName)}${closedBadge ? ' ' + closedBadge : ''}</td>
@@ -2612,11 +2634,11 @@
         const estadoTexto = c.rawEstado || c.proceduralStage || '—';
         const resuelto = /resuelto/i.test(estadoTexto);
         if (resuelto)
-          badges.push(`<span class="estado-badge estado-resuelto">✅ RESUELTO</span>`);
+          badges.push(`<span class="estado-badge estado-resuelto">${icon('circle-check',11)} RESUELTO</span>`);
         if (c.intimaciones && c.intimaciones.length > 0)
-          badges.push(`<span class="estado-badge estado-intimado">⚠ INTIMADO</span>`);
+          badges.push(`<span class="estado-badge estado-intimado">${icon('triangle-alert',11)} INTIMADO</span>`);
         if (c.disposicion)
-          badges.push(`<span class="estado-badge estado-disposicion">📄 DISP. ${esc(c.disposicion)}</span>`);
+          badges.push(`<span class="estado-badge estado-disposicion">${icon('file',11)} DISP. ${esc(c.disposicion)}</span>`);
         const estadoCell = `<div style="display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:0.82rem;${resuelto?'color:var(--success);font-weight:600;':''}">${esc(estadoTexto)}</span>
           ${badges.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${badges.join('')}</div>` : ''}
@@ -2691,7 +2713,7 @@
     const closedAlert = document.getElementById('detail-possibly-closed-alert');
     if (c.possibleClosed) {
       closedAlert.style.display = '';
-      closedAlert.innerHTML = `⚠ <strong>Posiblemente cerrado</strong> — ${esc(c.possibleClosedReason || 'Verificar en PJN')}`;
+      closedAlert.innerHTML = `${icon('triangle-alert',14)} <strong>Posiblemente cerrado</strong> — ${esc(c.possibleClosedReason || 'Verificar en PJN')}`;
     } else {
       closedAlert.style.display = 'none';
     }
@@ -2730,8 +2752,8 @@
     const block = document.getElementById('detail-precaria-block');
     block.style.display = isConst ? 'none' : '';
     block.className = `precaria-block precaria-block--${level}`;
-    const icons = { ok: '✅', soon: '⚠️', urgent: '🚨', overdue: '🚨', none: '📅' };
-    block.querySelector('.precaria-block__icon').textContent = icons[level];
+    const icons = { ok: icon('circle-check',20), soon: icon('triangle-alert',20), urgent: icon('alert-circle',20), overdue: icon('alert-circle',20), none: icon('calendar',20) };
+    block.querySelector('.precaria-block__icon').innerHTML = icons[level];
     document.getElementById('detail-next-deadline').textContent = c.nextDeadline ? formatDate(c.nextDeadline) : '—';
     const daysEl = document.getElementById('detail-precaria-days');
     if (level === 'none')    daysEl.textContent = 'Sin fecha cargada';
@@ -2802,7 +2824,7 @@
     if (isConst && c.tribunal) {
       const key = juzgadoKey(c.tribunal);
       juzgadoSection.style.display = '';
-      juzgadoLabel.textContent = `📌 Nota: ${c.tribunal}`;
+      juzgadoLabel.innerHTML = `${icon('map-pin',12)} Nota: ${esc(c.tribunal)}`;
       juzgadoInput.value = key ? (juzgadoNotes[key] || '') : '';
       juzgadoInput.oninput = () => {
         if (key) { juzgadoNotes[key] = juzgadoInput.value; saveJuzgadoNotes(); }
@@ -2828,7 +2850,7 @@
         else                     diasTexto = `Quedan ${daysLeft} días`;
         return `<div class="intimacion-card">
           <div class="intimacion-card__header">
-            <span class="intimacion-card__title">📋 Intimación del ${formatDate(it.fecha)}</span>
+            <span class="intimacion-card__title">${icon('clipboard-list',12)} Intimación del ${formatDate(it.fecha)}</span>
             <span class="deadline-badge deadline-badge--${level}">
               <span>${diasTexto}</span>
               <span class="db-date">Vence ${formatDate(it.vencimiento)}</span>
@@ -3338,14 +3360,14 @@
       .sort((a, b) => b.score - a.score)
       .slice(0, 6);
     const maxScore = scored[0]?.score || 1;
-    el.innerHTML = `<div class="heatmap-sidebar__title">⚠ Top urgencias</div>` +
+    el.innerHTML = `<div class="heatmap-sidebar__title">${icon('triangle-alert',12)} Top urgencias</div>` +
       (scored.length === 0
         ? '<div style="color:var(--text-secondary);font-size:0.78rem;">Sin casos</div>'
         : scored.map(({ c, score }) => {
             const plazo = computePlazo(c);
             const d = daysSince(c.lastActionDate);
             let sug = '';
-            if (plazo?.isOverdue)        sug = `⚡ ${plazo.suggestion}`;
+            if (plazo?.isOverdue)        sug = `${icon('zap',11)} ${plazo.suggestion}`;
             else if (plazo)              sug = `Plazo vence en ${plazo.daysLeft}d hábiles`;
             else if (c.suggestion)       sug = c.suggestion;
             else if (d !== null && d > 150) sug = `${d}d sin movimiento — impulsar`;
@@ -3474,8 +3496,8 @@
             ${d !== null ? `<span class="kanban-sinmov kanban-sinmov--${cls}">${d}d</span>` : ''}
           </div>
           <div class="kanban-card__actions" onclick="event.stopPropagation();">
-            ${hasPdf ? `<button class="kanban-quick-btn" title="Ver documento" onclick="window.open('http://localhost:8000/documentos/${c.documentoPath.replace(/\\/g,'/').split('/').pop()}','_blank')">📄</button>` : ''}
-            <button class="kanban-quick-btn" title="Generar escrito" onclick="openSnippets('${c.id}')">✍</button>
+            ${hasPdf ? `<button class="kanban-quick-btn" title="Ver documento" onclick="window.open('http://localhost:8000/documentos/${c.documentoPath.replace(/\\/g,'/').split('/').pop()}','_blank')">${icon('file',12)}</button>` : ''}
+            <button class="kanban-quick-btn" title="Generar escrito" onclick="openSnippets('${c.id}')">${icon('pen-line',12)}</button>
           </div>
         </div>`;
       }).join('');
@@ -3585,8 +3607,8 @@
     ta.select();
     document.execCommand('copy');
     const btn = document.getElementById('snippet-copy-btn');
-    btn.textContent = '✓ Copiado!';
-    setTimeout(() => { btn.textContent = '📋 Copiar'; }, 1500);
+    btn.innerHTML = `${icon('check',13)} Copiado!`;
+    setTimeout(() => { btn.innerHTML = `${icon('copy',13)} Copiar`; }, 1500);
   }
 
   // ── Notifications ──────────────────────────────────────────
@@ -3639,10 +3661,10 @@
   }
 
   function notifIcon(type) {
-    if (type === 'urgency_urgent')  return '🚨';
-    if (type === 'urgency_watch')   return '⚠️';
-    if (type === 'possible_closed') return '📁';
-    return '📋';
+    if (type === 'urgency_urgent')  return icon('alert-circle', 14);
+    if (type === 'urgency_watch')   return icon('triangle-alert', 14);
+    if (type === 'possible_closed') return icon('folder', 14);
+    return icon('clipboard-list', 14);
   }
 
   function notifCardClass(type) {
@@ -3667,7 +3689,7 @@
     if (!notifications.length) {
       body.innerHTML = `
         <div class="notif-empty">
-          <div class="notif-empty__icon">🔕</div>
+          <div class="notif-empty__icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" x2="22" y1="2" y2="22"/></svg></div>
           <div class="notif-empty__text">Sin notificaciones pendientes.</div>
         </div>`;
       return;
