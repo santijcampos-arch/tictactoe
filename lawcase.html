@@ -1687,6 +1687,29 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
   }
 
+  // ── Counter animation ───────────────────────────────────────
+  const _animatedCounters = new Set(); // IDs estables, no referencias DOM
+
+  function animateCounter(el, target, duration = 600) {
+    const start = performance.now();
+    const update = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      el.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  }
+
+  function maybeAnimateCounter(el, target, id) {
+    if (_animatedCounters.has(id)) {
+      el.textContent = target;
+      return;
+    }
+    _animatedCounters.add(id);
+    animateCounter(el, target);
+  }
+
   // ── Toast ──────────────────────────────────────────────────
   let _toastTimer = null;
   function showToast(msg, type = 'ok') {
@@ -1939,9 +1962,12 @@
       const elP = document.getElementById(`stat-${cat}-pending`);
       const elU = document.getElementById(`stat-${cat}-upcoming`);
       if (!elA) return;
-      elA.textContent = active;   elA.className = 'panel-stat__value stat-link';
-      elP.textContent = pending;  elP.className = 'panel-stat__value stat-link' + (pending  > 0 ? ' has-warning' : '');
-      elU.textContent = upcoming; elU.className = 'panel-stat__value stat-link' + (upcoming > 0 ? ' has-danger'  : '');
+      maybeAnimateCounter(elA, active,   `${cat}-active`);
+      elA.className = 'panel-stat__value stat-link';
+      maybeAnimateCounter(elP, pending,  `${cat}-pending`);
+      elP.className = 'panel-stat__value stat-link' + (pending  > 0 ? ' has-warning' : '');
+      maybeAnimateCounter(elU, upcoming, `${cat}-upcoming`);
+      elU.className = 'panel-stat__value stat-link' + (upcoming > 0 ? ' has-danger'  : '');
     });
     renderUrgencyBanner();
   }
