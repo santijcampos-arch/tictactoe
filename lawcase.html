@@ -1724,14 +1724,28 @@
 
     const banner = document.getElementById('urgency-banner');
     const list   = document.getElementById('urgency-banner-items');
+
     if (items.length === 0) {
-      banner.style.display = 'none';
+      if (banner.style.display !== 'none') {
+        banner.classList.add('removing');
+        setTimeout(() => {
+          banner.style.display = 'none';
+          banner.classList.remove('removing', 'visible');
+        }, 210);
+      }
       return;
     }
-    banner.style.display = '';
+
     list.innerHTML = items.map(item =>
       `<div class="urgency-banner__item" onclick="${item.id ? `openCaseDetail('${esc(item.id)}');showView('view-case-detail')` : (item.action ? 'openContencioso()' : '')}">${esc(item.text)}</div>`
     ).join('');
+
+    if (banner.style.display === 'none' || banner.style.display === '') {
+      banner.style.display = '';
+      banner.classList.remove('removing');
+      void banner.offsetWidth;
+      banner.classList.add('visible');
+    }
   }
 
   // ── Open case list with active filter ─────────────────────
