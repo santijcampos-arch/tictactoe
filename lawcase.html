@@ -235,7 +235,6 @@
     }
     .panel-card::before { display: none; }
     .panel-card:hover .panel-card__title { color: var(--accent); }
-    .panel-card:hover { }
 
     .panel-card__icon {
       font-size: 1.8rem;
@@ -319,7 +318,7 @@
     .case-table tbody tr {
       border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.12s;
+      transition: background 0.12s, color 150ms ease;
     }
     .case-table tbody tr:hover { background: var(--bg-hover); }
     .case-table td {
@@ -666,7 +665,7 @@
     .form-group select option { background: var(--bg-topbar); }
     .form-group textarea { resize: vertical; min-height: 80px; }
     .form-group input.error,
-    .form-group select.error { border-color: var(--danger); }
+    .form-group select.error { border-bottom-color: var(--danger); }
     .field-error {
       font-size: 0.75rem;
       color: var(--danger);
@@ -1051,9 +1050,6 @@
     }
 
     /* Área 3 — Hover en filas de tabla y botones */
-    .case-table tbody tr {
-      transition: color 150ms ease;
-    }
     .case-table tbody tr:hover td { color: var(--text-primary); }
 
     .btn {
@@ -1691,6 +1687,7 @@
   const _animatedCounters = new Set(); // IDs estables, no referencias DOM
 
   function animateCounter(el, target, duration = 600) {
+    if (target === 0) { el.textContent = 0; return; }
     const start = performance.now();
     const update = (now) => {
       const progress = Math.min((now - start) / duration, 1);
