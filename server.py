@@ -19,6 +19,8 @@ PORT             = 8000
 FOLDER           = os.path.dirname(os.path.abspath(__file__))
 CASES_FILE       = os.path.join(FOLDER, 'cases.json')
 NOTIF_FILE       = os.path.join(FOLDER, 'notifications.json')
+PENDIENTES_FILE  = os.path.join(FOLDER, 'pendientes.json')
+PENDIENTES_LOCK  = PENDIENTES_FILE + '.lock'
 SHEET_ID         = '1tufvCv5qVUmqma9lzaz-JFAJCp31vTHd2Cns1EXtzOA'
 SHEET_NAME       = 'Sheet1'
 CONST_SHEET_ID   = '1H0KSyS8hZxikozppoIIn0cM33fBJhboPQ7LvE28JSds'
@@ -298,6 +300,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             else:
                 data = '[]'
             self._json(200, data.encode('utf-8'))
+        elif self.path == '/pendientes':
+            if os.path.exists(PENDIENTES_FILE):
+                with open(PENDIENTES_FILE, encoding='utf-8') as f:
+                    data = f.read()
+            else:
+                data = '[]'
+            self._json(200, data.encode('utf-8'))
         else:
             super().do_GET()
 
@@ -362,6 +371,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     _atomic_write(NOTIF_FILE, notif_data)
                 finally:
                     _release_lock(NOTIF_LOCK)
+            self._json(200, b'{"ok":true}')
+        elif self.path == '/pendientes':
+            length = int(self.headers.get('Content-Length', 0))
+            body   = self.rfile.read(length).decode('utf-8')
+            pendientes_data = json.loads(body)
+            if _acquire_lock(PENDIENTES_LOCK):
+                try:
+                    _atomic_write(PENDIENTES_FILE, pendientes_data)
+                finally:
+                    _release_lock(PENDIENTES_LOCK)
             self._json(200, b'{"ok":true}')
         elif self.path == '/open-pjn':
             length = int(self.headers.get('Content-Length', 0))
