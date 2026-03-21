@@ -3476,10 +3476,6 @@
         const cls = d === null ? '' : d < 30 ? 'ok' : d < 90 ? 'med' : 'high';
         const tipo = detectTipoAccion(c);
         const dot = plazoDeadlineDot(c);
-        // Progress bar: phase 0-5, fill = phase/5 * 100%
-        const phasePct = col.phase * 20;
-        const phaseFill = phasePct === 0 ? 'background:#6b7280;' : `background:${col.color};`;
-        const hasPdf = !!c.documentoPath;
         return `<div class="kanban-card" onclick="openCaseDetail('${c.id}');showView('view-case-detail');">
           <div class="kanban-card__header">
             <div style="flex:1;min-width:0;">
@@ -3488,16 +3484,9 @@
             </div>
             <span class="kanban-card__dot kanban-card__dot--${dot}" title="Estado plazo"></span>
           </div>
-          <div class="kanban-card__progress">
-            <div class="kanban-card__progress-fill" style="width:${phasePct}%;${phaseFill}"></div>
-          </div>
           <div class="kanban-card__footer">
             <span class="tipo-badge tipo-badge--${tipo}" style="font-size:0.61rem;padding:1px 6px;">${TIPO_LABELS[tipo]||tipo}</span>
             ${d !== null ? `<span class="kanban-sinmov kanban-sinmov--${cls}">${d}d</span>` : ''}
-          </div>
-          <div class="kanban-card__actions" onclick="event.stopPropagation();">
-            ${hasPdf ? `<button class="kanban-quick-btn" title="Ver documento" onclick="window.open('http://localhost:8000/documentos/${c.documentoPath.replace(/\\/g,'/').split('/').pop()}','_blank')">${icon('file',12)}</button>` : ''}
-            <button class="kanban-quick-btn" title="Generar escrito" onclick="openSnippets('${c.id}')">${icon('pen-line',12)}</button>
           </div>
         </div>`;
       }).join('');
