@@ -1874,7 +1874,13 @@
 
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    // Animación de entrada
+    el.classList.remove('view-enter');
+    void el.offsetWidth; // forzar reflow para reiniciar la animación
+    el.classList.add('view-enter');
+    setTimeout(() => el.classList.remove('view-enter'), 300);
     const lbl = VIEW_LABELS[id];
     const text = typeof lbl === 'function' ? lbl() : (lbl || '');
     document.getElementById('header-context').textContent = text;
