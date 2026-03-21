@@ -3464,8 +3464,6 @@
     KANBAN_COLS.forEach(col => colMap[col.key] = []);
     list.forEach(c => { const k = getKanbanColumn(c); if (colMap[k]) colMap[k].push(c); });
 
-    const phaseColors = ['#6b7280','#3fb950','#60a5fa','#a78bfa','#d29922','#c9a84c'];
-
     document.getElementById('kanban-board').innerHTML = KANBAN_COLS.map(col => {
       const cards = (colMap[col.key] || []).sort((a,b) => {
         const sA = urgencyScore(a), sB = urgencyScore(b);
