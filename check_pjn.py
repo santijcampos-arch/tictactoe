@@ -1094,8 +1094,9 @@ def es_dia_habil():
     if hoy.weekday() >= 5:  # 5=sábado, 6=domingo
         return False
 
-    # Feriados nacionales Argentina 2026
-    feriados_2026 = {
+    # Feriados nacionales Argentina 2026–2027
+    FERIADOS = {
+        # 2026
         (2026,  1,  1),  # Año Nuevo
         (2026,  2, 16),  # Carnaval
         (2026,  2, 17),  # Carnaval
@@ -1116,10 +1117,31 @@ def es_dia_habil():
         (2026, 11, 23),  # Puente turístico
         (2026, 12,  8),  # Inmaculada Concepción
         (2026, 12, 25),  # Navidad
+        # 2027
+        (2027,  1,  1),  # Año Nuevo
+        (2027,  2,  8),  # Carnaval
+        (2027,  2,  9),  # Carnaval
+        (2027,  3, 24),  # Día de la Memoria
+        (2027,  3, 26),  # Viernes Santo
+        (2027,  4,  2),  # Día del Veterano de Malvinas
+        (2027,  5,  1),  # Día del Trabajador
+        (2027,  5, 25),  # Revolución de Mayo
+        (2027,  6, 17),  # Güemes
+        (2027,  6, 20),  # Belgrano
+        (2027,  7,  9),  # Independencia
+        (2027,  8, 16),  # San Martín
+        (2027, 10, 11),  # Diversidad Cultural
+        (2027, 11, 22),  # Soberanía Nacional
+        (2027, 12,  8),  # Inmaculada Concepción
+        (2027, 12, 25),  # Navidad
     }
 
-    if (hoy.year, hoy.month, hoy.day) in feriados_2026:
+    if (hoy.year, hoy.month, hoy.day) in FERIADOS:
         return False
+
+    if hoy.year > 2027:
+        import sys
+        print(f"  [ADVERTENCIA] Año {hoy.year} sin feriados cargados — actualizar FERIADOS en check_pjn.py", file=sys.stderr)
 
     return True
 
