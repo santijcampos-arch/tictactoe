@@ -1,5 +1,23 @@
-# OS files
+# Datos y credenciales — NO commitear
+cases.json
+notifications.json
+credentials.json
+gmail_credentials.json
+gmail_token.json
+groq_key.txt
+gemini_key.txt
+migraciones_results.json
+
+# Archivos temporales
+*.tmp
+*.bak
+*.lock
+__pycache__/
+*.pyc
 .DS_Store
+captcha_debug.png
+
+# OS files
 Thumbs.db
 
 # Editor directories
