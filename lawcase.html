@@ -4349,7 +4349,7 @@
       if (!v) return;
       const id = v.id;
       if      (id === 'view-citizenship')  renderCitizenship();
-      else if (id === 'view-case-list')    renderCaseList();
+      else if (id === 'view-case-list')    renderCaseList(currentCategory);
       else if (id === 'view-dashboard')    renderDashboard();
       else if (id === 'view-contencioso')  renderContencioso();
       else if (id === 'view-kanban')       renderKanban();
@@ -4362,6 +4362,7 @@
     let _ver = { cases: null, notif: null };
 
     async function _checkVersion() {
+      if (!USE_SERVER) return;
       if (document.activeElement?.isContentEditable) return;
       try {
         const v = await fetch('/version').then(r => r.json());
