@@ -507,6 +507,18 @@ print("=" * 50)
 
 sync_from_sheet()
 
+def _sheets_sync_loop():
+    time.sleep(600)  # primera ejecución a los 10 min (el startup ya sincronizó)
+    while True:
+        try:
+            sync_from_sheet()
+            print(f"  [Auto-sync] Sheets OK — {datetime.now().strftime('%H:%M')}", flush=True)
+        except Exception as e:
+            print(f"  [Auto-sync] Error: {e}", flush=True)
+        time.sleep(600)
+
+threading.Thread(target=_sheets_sync_loop, daemon=True).start()
+
 print()
 print(f"  Abriendo en: http://localhost:{PORT}/lawcase.html")
 print("  No cierres esta ventana mientras usas la app.")
