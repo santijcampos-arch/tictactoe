@@ -304,6 +304,41 @@ Excepción: `sentencia` y `carta_ciudadania` generan notificación cuando se com
 
 ---
 
+## UI — Indicadores de acción requerida
+
+### Lista de ciudadanía (`view-citizenship`)
+
+Cuando un caso tiene `nextAction` seteado (no vacío), mostrar un ícono de advertencia al lado del nombre del cliente en la lista. Usar el mismo color de acento del tema (gold `#b8975a`) para consistencia visual.
+
+```html
+<!-- Ejemplo de fila con alerta -->
+<span class="cit-action-badge" title="Acción requerida">⚠</span>
+```
+
+El badge debe ser sutil — no un botón, solo un indicador visual que el usuario ve de un vistazo sin que distraiga del resto de la lista.
+
+### Detalle del caso (`view-case-detail`)
+
+Cuando el caso tiene `nextAction`, mostrar un bloque destacado en el detalle, visible inmediatamente al abrir el caso (sin tener que scrollear):
+
+```html
+<div class="case-action-alert">
+  <span class="case-action-alert__icon">⚠</span>
+  <div class="case-action-alert__body">
+    <div class="case-action-alert__label">Acción requerida</div>
+    <div class="case-action-alert__text">{nextAction}</div>
+  </div>
+</div>
+```
+
+**Estilos**: fondo sutil con borde izquierdo en gold (`#b8975a`), texto claro sobre fondo oscuro navy. Mismo sistema visual que el resto de la app (Dark Refined Flat).
+
+**Posición**: arriba de todo en el detalle del caso, antes de los campos editables.
+
+**Clearing**: si el abogado resuelve la acción, puede borrar el texto de `nextAction` en el detalle (campo editable inline, igual que los comentarios). Al guardar el caso vacío ese campo, el badge desaparece de la lista.
+
+---
+
 ## Scheduling
 
 - **Frecuencia**: lunes a viernes, 10hs y 16hs (2 corridas por día)
