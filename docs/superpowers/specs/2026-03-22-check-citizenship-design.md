@@ -16,12 +16,13 @@ Script `check_citizenship.py` que consulta el PJN (scw.pjn.gov.ar) para los caso
 **Estado actual:**
 - Los casos de ciudadanía en `cases.json` tienen `caseNumber` (ej: `CCF 020934/2022` o `24590/2024`) pero `lastActionDate: null` y etapas sin actualizar desde el ingreso manual.
 - `check_pjn.py` ya hace scraping del PJN para casos constitucionales — `check_citizenship.py` es su análogo para ciudadanía.
-- ~130 casos de ciudadanía con número de expediente. Primera corrida: ~27 min. Corridas posteriores: 3-6 min (smart skip).
+- ~130 casos de ciudadanía con número de expediente. Primera corrida: ~55 min. Corridas posteriores con smart skip: 3-6 min (solo casos con actuaciones nuevas).
 
 **Infraestructura reutilizada de `check_pjn.py`:**
 - `setup_driver()` / `quit_driver()` — Chrome headless con anti-detección
 - `solve_captcha()` — resolución de captcha con ddddocr
 - `_atomic_write_json()` — escritura atómica de JSON
+- `_acquire_file_lock()` / `_release_file_lock()` — locks cross-process
 - `parse_case_number()` — parseo de número de expediente
 - `JURISDICTION_CODES` — mapa de prefijos a códigos PJN
 
@@ -54,45 +55,60 @@ Las 12 etapas del flujo, en orden, con sus valores posibles (`"OK"`, `"NO"`, `""
 
 ```
 Para cada caso citizenship con caseNumber:
-  1. Smart skip → si lastActionDate no cambió → next case
-  2. Abrir PJN → resolver captcha → buscar expediente
-  3. Extraer lista de actuaciones (texto de cada fila)
-  4. Keyword detection → marcar etapas obvias como OK/NO
-  5. Groq (1 call) → analizar actuaciones restantes → stage updates + action flags
-  6. Actualizar stages + lastActionDate + lastPjnCheck en cases.json
-  7. Si requires_action → escribir notificación en notifications.json
+  1. Abrir PJN → resolver captcha → buscar expediente
+  2. Leer fecha de última actuación del PJN
+  3. Smart skip: si fecha == lastActionDate guardada Y lastPjnCheck existe → actualizar lastPjnCheck y continuar
+  4. Extraer lista completa de actuaciones
+  5. Keyword detection → marcar etapas obvias como OK/NO
+  6. Si quedan etapas sin resolver: Groq (1 call) → stage updates + action flags
+  7. Merge de stages (respetando reglas de merge)
+  8. Actualizar cases.json (thread-safe)
+  9. Si requires_action → escribir notificación en notifications.json
 ```
 
-### Paralelismo
+### Paralelismo y rate limiting
 
-- `N_WORKERS = 2` — dos Chrome simultáneos
-- Delay mínimo de 3s entre búsquedas consecutivas al PJN (independiente del worker)
-- `MAX_CHROME_INSTANCES = 3` (mismo límite que check_pjn.py)
+- `N_WORKERS = 1` — un Chrome a la vez, igual que `check_pjn.py`
+- `time.sleep(8)` entre casos (mismo intervalo que `check_pjn.py`)
+- `MAX_CHROME_INSTANCES = 3` (límite de seguridad, igual que `check_pjn.py`)
+
+> Nota: N_WORKERS = 1 es deliberado. El PJN es el mismo servidor que usa check_pjn.py. Dos workers simultáneos podrían generar rate limiting. Si después de varias semanas de uso normal no hay problemas, se puede evaluar subir a 2.
 
 ---
 
 ## Componente 1 — Smart Skip
 
+El skip se evalúa dentro de `process_case()`, después de cargar la página del expediente y leer la fecha de la última actuación:
+
 ```python
-def should_skip(case):
-    """True si el caso no tiene actuaciones nuevas desde el último check."""
-    if not case.get('lastPjnCheck'):
-        return False  # nunca chequeado → no saltear
-    if not case.get('lastActionDate'):
-        return False  # sin fecha guardada → no saltear
-    # El PJN va a confirmar si lastActionDate cambió al cargar la página
-    # El skip real se decide después de ver la fecha del PJN, antes de llamar a Groq
-    return False
+def process_case(driver, case, telegram_ctx):
+    # Cargar expediente, resolver captcha...
+    pjn_last_date = get_last_action_date(driver)  # fecha de la actuación más reciente en el PJN
+
+    # Smart skip: si nada cambió desde el último check, actualizar solo lastPjnCheck
+    if pjn_last_date and pjn_last_date == case.get('lastActionDate') and case.get('lastPjnCheck'):
+        print(f"    Sin cambios — saltando {case['caseNumber']}")
+        _update_last_check(case['id'])  # escribe solo lastPjnCheck, thread-safe
+        return
+
+    # ... continuar con extracción y análisis
 ```
 
-El skip real ocurre en `process_case()`:
 ```python
-# Después de cargar el expediente en el PJN:
-pjn_last_date = get_last_action_date(driver)  # fecha de la actuación más reciente
-if pjn_last_date == case.get('lastActionDate') and case.get('lastPjnCheck'):
-    print(f"    Sin cambios — saltando")
-    update_last_check(case)  # actualiza lastPjnCheck sin tocar el resto
-    return
+def _update_last_check(case_id):
+    """Actualiza solo lastPjnCheck para el caso dado. Thread-safe vía file lock."""
+    if not _acquire_file_lock(_CASES_FILE_LOCK_PATH):
+        return
+    try:
+        with open(CASES_FILE, encoding='utf-8') as f:
+            all_cases = json.load(f)
+        for c in all_cases:
+            if c['id'] == case_id:
+                c['lastPjnCheck'] = datetime.now().isoformat()
+                break
+        _atomic_write_json(CASES_FILE, all_cases)
+    finally:
+        _release_file_lock(_CASES_FILE_LOCK_PATH)
 ```
 
 ---
@@ -109,25 +125,26 @@ def parse_citizenship_case_number(case_number):
     code, number, year = parse_case_number(case_number)
     if code:
         return code, number, year
-    # Intentar parsear como número puro: XXXXX/YYYY
+    # Intentar parsear como número puro: XXXXX/YYYY (sin prefijo de jurisdicción)
     m = re.match(r'0*(\d+)/(\d{4})', case_number.strip())
     if m:
         return JURISDICTION_CODES['CCF'], m.group(1), m.group(2)
     return None, None, None
 ```
 
+> Los ceros a la izquierda siempre se eliminan (el PJN espera el número sin ellos).
+
 ---
 
 ## Componente 3 — Extracción de actuaciones
 
-Tras cargar el expediente en el PJN, extraer todas las filas de la tabla de actuaciones:
+Tras cargar el expediente, extraer todas las filas de la tabla de actuaciones. Si hay paginación, navegar todas las páginas:
 
 ```python
 def get_actuaciones(driver):
     """
-    Retorna lista de dicts con los campos de cada actuación:
-    [{tipo, descripcion, fecha, oficina}, ...]
-    Navega por todas las páginas si hay paginación.
+    Retorna lista de dicts, una por actuación, de más antigua a más reciente:
+    [{"tipo": "FIRMA DESPACHO", "descripcion": "ETAPA 1 - OFICIO/DEO", "fecha": "03/24/2024", "oficina": "VJ6"}, ...]
     """
 ```
 
@@ -141,9 +158,9 @@ Campos a extraer por fila:
 
 ## Componente 4 — Keyword Detection
 
-Antes de llamar a Groq, detectar etapas con patrones inequívocos:
+Antes de llamar a Groq, detectar etapas con patrones inequívocos sobre el campo `descripcion` (case-insensitive):
 
-| Patrón (en `descripcion`, case-insensitive) | Stage | Valor |
+| Patrón | Stage | Valor |
 |---|---|---|
 | `CONTESTACION INTERPOL` | `pfa_interpol` | `OK` |
 | `CONTESTACION RENAPER` | `renaper` | `OK` |
@@ -152,7 +169,7 @@ Antes de llamar a Groq, detectar etapas con patrones inequívocos:
 | `INFORME.*CNE` o `CAMARA NACIONAL ELECTORAL` | `cne` | `OK` |
 | `CARTA DE CIUDADANIA` o `CARTA CIUDADANIA` | `carta_ciudadania` | `OK` |
 
-Estos son los únicos patrones suficientemente unívocos para marcar sin LLM. Todo lo demás va a Groq.
+Solo estos patrones son suficientemente inequívocos para marcar sin LLM. Todo lo demás va a Groq.
 
 ---
 
@@ -160,7 +177,19 @@ Estos son los únicos patrones suficientemente unívocos para marcar sin LLM. To
 
 ### Cuándo se llama
 
-Una sola llamada por caso, con **todas** las actuaciones que no fueron marcadas por keywords. Se llama solo si hay actuaciones sin resolver o si `lastActionDate` cambió.
+Una sola llamada por caso, con todas las actuaciones del expediente. Se llama solo si:
+1. `lastActionDate` cambió (o es la primera vez que se chequea), **Y**
+2. Al menos una etapa sigue sin determinar (valor `""`) después del keyword detection.
+
+Si todas las etapas ya tienen valor `OK` o `NO` tras el keyword detection, no se llama a Groq.
+
+### Manejo de errores Groq
+
+Si la llamada a Groq falla (error de red, rate limit, JSON inválido):
+- Loguear el error: `[Groq] Error en {caseNumber}: {e}`
+- Dejar las etapas en su estado actual (no modificar stages)
+- No generar notificación
+- Continuar con el siguiente caso
 
 ### Prompt
 
@@ -197,28 +226,68 @@ Si "requires_action" es true, "action_note" debe ser específico: qué se pide, 
 
 ### Contexto de Telegram
 
-Si existe `telegram_ciudadania.json`, buscar mensajes del cliente por nombre. Incluir los últimos 3 mensajes relevantes como contexto adicional al prompt de Groq (puede ayudar a entender documentación ya enviada, fechas de audiencia, etc.).
+Si existe `telegram_ciudadania.json`, buscar mensajes del cliente por nombre. Incluir los últimos 3 mensajes relevantes como contexto adicional (puede ayudar a entender documentación ya enviada, fechas de audiencia, etc.).
 
 ---
 
-## Componente 6 — Actualización de datos
+## Componente 6 — Merge de stages
+
+**Regla completa de merge** al combinar stages existentes con los detectados (keyword + Groq):
+
+| Estado actual | Nuevo valor detectado | Resultado |
+|---|---|---|
+| `OK` | cualquiera | `OK` (nunca se baja) |
+| `NO` | `OK` | `OK` (puede corregirse si el informe fue favorable) |
+| `NO` | `""` | `NO` (mantiene) |
+| `""` | `OK` o `NO` | nuevo valor |
+| `""` | `""` | `""` (sin info) |
+
+```python
+def merge_stages(existing, detected):
+    """Merge de stages con las reglas de precedencia definidas."""
+    result = dict(existing)
+    for key, new_val in detected.items():
+        current = result.get(key, '')
+        if current == 'OK':
+            continue  # OK es permanente
+        if new_val in ('OK', 'NO'):
+            result[key] = new_val
+    return result
+```
+
+---
+
+## Componente 7 — Actualización de datos
 
 ### cases.json
 
-Por cada caso procesado:
-```python
-case['stages'] = merged_stages          # keyword + Groq, sin pisar OKs ya existentes
-case['lastActionDate'] = pjn_last_date  # fecha más reciente del PJN
-case['lastPjnCheck'] = datetime.now().isoformat()
-if groq_result.get('requires_action'):
-    case['nextAction'] = groq_result['action_note']
-```
+Por cada caso procesado, la escritura es thread-safe: primero se adquiere `_CASES_LOCK` (threading.Lock en memoria), luego `_acquire_file_lock()` (lock cross-process), igual que en `check_pjn.py`:
 
-**Regla de merge**: nunca bajar una etapa de `OK` a `""`. Solo se puede avanzar (de `""` a `OK`/`NO`) o mantener.
+```python
+with _CASES_LOCK:
+    if not _acquire_file_lock(_CASES_FILE_LOCK_PATH):
+        print(f"    No se pudo obtener lock — saltando escritura")
+        return
+    try:
+        all_cases = json.load(open(CASES_FILE, encoding='utf-8'))
+        for c in all_cases:
+            if c['id'] == case['id']:
+                c['stages'] = merge_stages(c.get('stages', {}), detected_stages)
+                c['lastActionDate'] = pjn_last_date
+                c['lastPjnCheck'] = datetime.now().isoformat()
+                if groq_result and groq_result.get('requires_action'):
+                    c['nextAction'] = groq_result['action_note']
+                break
+        _atomic_write_json(CASES_FILE, all_cases)
+    finally:
+        _release_file_lock(_CASES_FILE_LOCK_PATH)
+```
 
 ### notifications.json
 
-Cuando `requires_action` es True o cuando una etapa nueva se completó:
+Se escribe una notificación cuando `requires_action` es `True`. Las etapas completadas de forma rutinaria (ej: llegó RENAPER) **no** generan notificación — solo los casos que requieren acción del estudio.
+
+Excepción: `sentencia` y `carta_ciudadania` generan notificación cuando se completan **por primera vez** (es decir, cuando el valor pasa de `""` a `OK`/`NO` en esta corrida). Si ya estaban en `OK`/`NO` en el run anterior, no se vuelve a notificar.
 
 ```python
 {
@@ -227,7 +296,7 @@ Cuando `requires_action` es True o cuando una etapa nueva se completó:
     "caseId": "<id>",
     "clientName": "<nombre>",
     "caseNumber": "<número>",
-    "message": "<action_note o descripción de etapa completada>",
+    "message": "<action_note o 'Sentencia dictada' / 'Carta de ciudadanía lista'>",
     "date": "<fecha>",
     "read": false
 }
@@ -255,21 +324,15 @@ Cuando `requires_action` es True o cuando una etapa nueva se completó:
 
 ---
 
-## Rate limiting
-
-- `N_WORKERS = 2`
-- Delay global de 3s entre búsquedas al PJN (Lock compartido entre workers)
-- Si el PJN devuelve un error o timeout 3 veces seguidas → loguear y continuar con el siguiente caso
-- No reintentar indefinidamente — igual que `check_pjn.py`
-
----
-
 ## Criterios de éxito
 
-- [ ] La primera corrida procesa los ~130 casos en ≤30 minutos.
+- [ ] La primera corrida procesa los ~130 casos en ≤60 minutos.
 - [ ] Corridas posteriores procesan solo casos con cambios en ≤10 minutos.
 - [ ] Las etapas detectadas por keyword se marcan correctamente sin llamar a Groq.
+- [ ] Si todas las etapas están resueltas tras keyword detection, no se llama a Groq.
 - [ ] Groq identifica correctamente HACESE SABER con pedidos de documentación y genera notificación.
 - [ ] Una sentencia de rechazo genera notificación con `requires_action: true`.
+- [ ] Una sentencia favorable genera notificación aunque `requires_action` sea false.
 - [ ] No se pisan etapas ya marcadas OK.
+- [ ] Un error de Groq no interrumpe el script — se loguea y continúa.
 - [ ] El script termina limpiamente aunque un caso falle (Chrome no queda colgado).
