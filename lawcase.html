@@ -1271,6 +1271,156 @@
       }
       .pendientes-panel, .pendientes-panel.closing { animation: none; }
     }
+
+    /* ── Vista Ciudadanía — lista compacta ───────────────────────── */
+    .cit-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .cit-stats { display: flex; gap: 20px; }
+    .cit-stat  { font-size: 0.75rem; color: var(--text-secondary); }
+    .cit-stat strong { color: var(--text-primary); font-weight: 500; }
+    .cit-stat.active strong { color: var(--accent); }
+    .cit-stat.carta  strong { color: var(--success); }
+    .cit-search {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-primary); padding: 5px 11px; border-radius: 5px;
+      font-size: 0.75rem; font-family: inherit; width: 180px;
+      outline: none; transition: border-color 150ms;
+    }
+    .cit-search:focus { border-color: rgba(184,151,90,0.35); }
+    .cit-search::placeholder { color: var(--text-muted); }
+
+    .cit-group-sep {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(184,151,90,0.4);
+      padding: 20px 0 7px; border-bottom: 1px solid rgba(184,151,90,0.08);
+      margin-bottom: 2px;
+      cursor: pointer; display: flex; align-items: center;
+      transition: color 120ms;
+    }
+    .cit-group-sep:first-child { padding-top: 0; }
+    .cit-group-sep:hover { color: rgba(184,151,90,0.7); }
+    .cit-group-sep.cit-sep-active { color: rgba(184,151,90,0.85); }
+    .cit-sep-count {
+      margin-left: auto; font-weight: 400; font-size: 0.55rem;
+      color: var(--text-secondary); letter-spacing: 0; text-transform: none;
+    }
+    .cit-sep-arrow {
+      font-size: 0.5rem; margin-left: 6px; color: var(--text-muted);
+      transition: transform 150ms;
+    }
+    .cit-group-sep.cit-sep-active .cit-sep-arrow { transform: rotate(90deg); color: var(--accent); }
+
+    /* ── Citizenship — two-column layout ── */
+    .cit-columns { display: flex; gap: 0; align-items: flex-start; }
+    .cit-list-col { flex: 0 0 72%; padding-right: 20px; }
+    .cit-panel-col {
+      flex: 0 0 28%; border-left: 1px solid var(--border);
+      padding-left: 20px;
+      position: sticky; top: 64px;          /* queda fijo mientras scrolleás la lista */
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .cit-panel-col::-webkit-scrollbar { display: none; }
+
+    /* Panel internals */
+    .cit-p-head { padding: 14px 0 10px; border-bottom: 1px solid rgba(184,151,90,0.08); margin-bottom: 12px; }
+    .cit-p-tag { font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(184,151,90,0.4); }
+    .cit-p-name { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-top: 2px; }
+    .cit-p-name.accent { color: var(--accent); }
+    .cit-p-sub { font-size: 0.64rem; color: var(--text-secondary); margin-top: 1px; }
+    .cit-p-stats { display: flex; gap: 0; margin-bottom: 14px; }
+    .cit-p-stat { flex: 1; padding: 6px 0; border-right: 1px solid var(--border); text-align: center; }
+    .cit-p-stat:last-child { border-right: none; }
+    .cit-p-stat-n { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); line-height: 1; }
+    .cit-p-stat-l { font-size: 0.56rem; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cit-p-stat.ac .cit-p-stat-n { color: var(--accent); }
+    .cit-p-stat.gr .cit-p-stat-n { color: var(--success); }
+    .cit-p-sec { font-size: 0.58rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+    .cit-brow { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+    .cit-bname { width: 76px; font-size: 0.62rem; color: var(--text-secondary); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cit-btrack { flex: 1; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; }
+    .cit-bfill { height: 3px; border-radius: 2px; }
+    .cit-bn { width: 18px; font-size: 0.62rem; color: var(--text-primary); text-align: right; flex-shrink: 0; }
+    .cit-p-div { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+    .cit-cuello { padding: 6px 9px; border-radius: 4px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.12); }
+    .cit-c-lbl { font-size: 0.56rem; color: rgba(239,100,100,0.5); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1px; }
+    .cit-c-val { font-size: 0.74rem; font-weight: 600; color: rgba(239,120,120,0.85); }
+    .cit-c-sub { font-size: 0.6rem; color: var(--text-secondary); margin-top: 1px; }
+    .cit-p-hint { font-size: 0.6rem; color: var(--text-muted); font-style: italic; margin-top: 12px; }
+    .cit-p-back { font-size: 0.62rem; color: var(--text-secondary); cursor: pointer; margin-top: 12px; display: none; }
+    .cit-p-back:hover { color: var(--accent); }
+
+    .cit-card {
+      border-radius: 5px; cursor: pointer; padding: 0 8px;
+      transition: background 100ms; margin-bottom: 1px;
+    }
+    .cit-card:hover { background: rgba(255,255,255,0.028); }
+
+    .cit-main { display: flex; align-items: center; padding: 9px 0 4px; }
+
+    .cit-name {
+      width: 190px; flex-shrink: 0;
+      font-size: 0.76rem; font-weight: 500; color: var(--text-primary);
+    }
+    .cit-count {
+      width: 72px; flex-shrink: 0;
+      font-size: 0.7rem; color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+    .cit-count .n { color: rgba(63,185,80,0.65); font-weight: 500; }
+
+    .cit-active-zone { display: flex; align-items: center; gap: 8px; }
+    .cit-pill-active {
+      font-size: 0.65rem; font-weight: 600; padding: 3px 10px;
+      border-radius: 3px; background: rgba(184,151,90,0.13);
+      color: var(--accent); border: 1px solid rgba(184,151,90,0.28);
+      white-space: nowrap;
+    }
+    .cit-pill-active::after { content: ' →'; }
+    .cit-exempt-note { font-size: 0.62rem; color: rgba(255,255,255,0.2); font-style: italic; }
+    .cit-sin-iniciar { font-size: 0.7rem; color: var(--text-muted); }
+
+    .cit-inline-comment {
+      flex: 1; padding-left: 20px;
+      display: flex; align-items: center; gap: 6px; min-width: 0;
+    }
+    .cit-comment-icon {
+      font-size: 0.58rem; color: var(--text-muted);
+      flex-shrink: 0; opacity: 0; transition: opacity 120ms;
+    }
+    .cit-card:hover .cit-comment-icon { opacity: 1; }
+    .cit-comment-text {
+      flex: 1; outline: none; background: transparent; border: none;
+      font: inherit; font-size: 0.72rem; font-style: italic;
+      color: rgba(184,151,90,0.85); cursor: text; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cit-comment-text:focus { color: rgba(184,151,90,1); white-space: normal; }
+    .cit-comment-text:empty::before {
+      content: attr(data-placeholder); pointer-events: none;
+      color: var(--text-muted); font-style: italic; font-size: 0.68rem;
+    }
+
+    .cit-expand {
+      overflow: hidden; max-height: 0; opacity: 0; padding-left: 262px;
+      transition: max-height 180ms ease, opacity 150ms ease, padding-bottom 150ms ease;
+      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    }
+    .cit-card:hover .cit-expand { max-height: 60px; opacity: 1; padding-bottom: 8px; }
+    .cit-expand-label {
+      font-size: 0.6rem; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      white-space: nowrap; margin-right: 2px;
+    }
+    .cit-pill-pending {
+      font-size: 0.6rem; padding: 2px 7px; border-radius: 3px;
+      background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.28);
+      border: 1px solid rgba(255,255,255,0.07); white-space: nowrap;
+    }
+    .cit-carta-badge { font-size: 0.6rem; color: var(--success); font-weight: 600; margin-left: 5px; }
   </style>
 </head>
 <body>
@@ -1364,16 +1514,16 @@
         <div class="panel-card__title">Ciudadanía</div>
         <div class="panel-card__stats">
           <div class="panel-stat">
-            <span class="panel-stat__label">Casos activos</span>
-            <span class="panel-stat__value stat-link" id="stat-citizenship-active" onclick="openCaseList('citizenship')">0</span>
+            <span class="panel-stat__label">Total casos</span>
+            <span class="panel-stat__value stat-link" id="stat-citizenship-active" onclick="openCitizenship()">0</span>
           </div>
           <div class="panel-stat">
-            <span class="panel-stat__label">Pendientes</span>
-            <span class="panel-stat__value stat-link" id="stat-citizenship-pending" onclick="openCaseList('citizenship')">0</span>
+            <span class="panel-stat__label">En trámite</span>
+            <span class="panel-stat__value stat-link" id="stat-citizenship-pending" onclick="openCitizenship()">0</span>
           </div>
           <div class="panel-stat">
-            <span class="panel-stat__label">Próximos vencimientos</span>
-            <span class="panel-stat__value stat-link" id="stat-citizenship-upcoming" onclick="openCaseListFiltered('citizenship','vencer')">0</span>
+            <span class="panel-stat__label">Cartas obtenidas</span>
+            <span class="panel-stat__value stat-link" id="stat-citizenship-upcoming" onclick="openCitizenship()">0</span>
           </div>
         </div>
       </div>
@@ -1711,6 +1861,36 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CIUDADANÍA — ANÁLISIS
+═══════════════════════════════════════════════════════════ -->
+<div id="view-citizenship" class="view">
+  <div class="page-body">
+    <div class="view-header">
+      <div class="view-header-left">
+        <button class="back-btn" id="cit-back-btn">← Volver al panel</button>
+        <h2>Ciudadanía</h2>
+      </div>
+      <button class="btn btn--secondary" id="cit-list-btn">Ver lista completa</button>
+    </div>
+
+    <div class="cit-controls">
+      <div class="cit-stats">
+        <div class="cit-stat">Total <strong id="cit-stat-total">0</strong></div>
+        <div class="cit-stat active">En trámite <strong id="cit-stat-active">0</strong></div>
+        <div class="cit-stat carta">Cartas <strong id="cit-stat-closed">0</strong></div>
+      </div>
+      <input class="cit-search" id="cit-search" placeholder="Buscar cliente..."
+             oninput="citFiltrar(this.value)">
+    </div>
+
+    <div class="cit-columns">
+      <div class="cit-list-col" id="cit-list"></div>
+      <div class="cit-panel-col" id="cit-panel"></div>
     </div>
   </div>
 </div>
@@ -2386,6 +2566,7 @@
     'view-case-list':    () => (currentSubTipo ? SUB_LABELS[currentSubTipo] : CATEGORIES[currentCategory]) || 'Casos',
     'view-case-detail':  () => (currentSubTipo ? SUB_LABELS[currentSubTipo] : CATEGORIES[currentCategory]) || 'Detalle del caso',
     'view-contencioso':  'Contencioso Administrativo',
+    'view-citizenship':  'Ciudadanía',
     'view-kanban':       'Vista Kanban',
     'view-calendar':     'Calendario',
   };
@@ -2424,6 +2605,11 @@
         active   = all.filter(c => c.status === 'active').length;
         pending  = all.filter(c => c.status === 'pending').length;
         upcoming = all.filter(c => c.status !== 'closed' && isUpcoming(c.nextDeadline)).length;
+      } else if (cat === 'citizenship') {
+        const cits = cases.filter(c => c.category === 'citizenship');
+        active   = cits.length;
+        pending  = cits.filter(c => c.status !== 'closed').length;
+        upcoming = cits.filter(c => c.status === 'closed').length;
       } else {
         active   = countActive(cat);
         pending  = countPending(cat);
@@ -2436,9 +2622,9 @@
       maybeAnimateCounter(elA, active,   `${cat}-active`);
       elA.className = 'panel-stat__value stat-link';
       maybeAnimateCounter(elP, pending,  `${cat}-pending`);
-      elP.className = 'panel-stat__value stat-link' + (pending  > 0 ? ' has-warning' : '');
+      elP.className = 'panel-stat__value stat-link' + (cat !== 'citizenship' && pending > 0 ? ' has-warning' : '');
       maybeAnimateCounter(elU, upcoming, `${cat}-upcoming`);
-      elU.className = 'panel-stat__value stat-link' + (upcoming > 0 ? ' has-danger'  : '');
+      elU.className = 'panel-stat__value stat-link' + (cat !== 'citizenship' && upcoming > 0 ? ' has-danger' : '');
     });
     renderUrgencyBanner();
   }
@@ -2464,6 +2650,351 @@
     currentSubTipo = null;
     renderContencioso();
     showView('view-contencioso');
+  }
+
+  // ── Ciudadanía — análisis ───────────────────────────────────
+  const CITIZENSHIP_STAGES = [
+    ['pfa_interpol',    'PFA INTERPOL'],
+    ['renaper',         'RENAPER'],
+    ['cne',             'CNE'],
+    ['reincidencia',    'REINCIDENCIA'],
+    ['dnm',             'DNM'],
+    ['pfa_dactilo',     'PFA DACTILO'],
+    ['edicto',          'EDICTO'],
+    ['pfa_convenio',    'PFA CONVENIO'],
+    ['medios_de_vida',  'Medios de vida'],
+    ['fiscal',          'Fiscal'],
+    ['sentencia',       'Sentencia'],
+    ['carta_ciudadania','Carta de ciudadanía'],
+  ];
+
+  // ── Citizenship helpers ────────────────────────────────────────
+  function citFindStageKey(label) {
+    if (!label || label === 'Sin iniciar') return null;
+    const l = label.toLowerCase();
+    return (CITIZENSHIP_STAGES.find(([, lbl]) => lbl.toLowerCase() === l) || [])[0] || null;
+  }
+
+  function citFindCurrentKey(stages, proceduralStageLabel) {
+    if (!proceduralStageLabel || proceduralStageLabel === 'Sin iniciar') return null;
+    const lastKey = citFindStageKey(proceduralStageLabel);
+    if (!lastKey) return null;
+    const idx = CITIZENSHIP_STAGES.findIndex(([k]) => k === lastKey);
+    for (let i = idx + 1; i < CITIZENSHIP_STAGES.length; i++) {
+      if (!stages[CITIZENSHIP_STAGES[i][0]]) return CITIZENSHIP_STAGES[i][0];
+    }
+    return null;
+  }
+
+  function citRenderCard(c, group) {
+    const stages     = c.stages || {};
+    const sinIniciar = !c.proceduralStage || c.proceduralStage === 'Sin iniciar';
+    const closed     = c.status === 'closed';
+
+    // Contador: cualquier valor no vacío cuenta (OK, fecha, NO)
+    const completadas = CITIZENSHIP_STAGES.filter(([k]) => stages[k] && stages[k] !== '').length;
+
+    // Exento: alguna etapa tiene valor 'NO' (case-insensitive)
+    const hayExento = CITIZENSHIP_STAGES.some(([k]) => (stages[k] || '').toUpperCase() === 'NO');
+
+    // Etapa activa
+    const currentKey   = citFindCurrentKey(stages, c.proceduralStage);
+    const currentLabel = currentKey
+      ? (CITIZENSHIP_STAGES.find(([k]) => k === currentKey) || [])[1] || ''
+      : null;
+
+    // Etapas pendientes: todas las etapas vacías excepto la activa actual
+    const pendientes = CITIZENSHIP_STAGES
+      .filter(([k]) => k !== currentKey && (!stages[k] || stages[k] === ''))
+      .map(([, l]) => l);
+
+    // Zona de comentario (común a todos los casos)
+    const commentZone = `
+      <div class="cit-inline-comment">
+        <span class="cit-comment-icon">✎</span>
+        <span class="cit-comment-text" contenteditable="true"
+          data-id="${c.id}" data-placeholder="Agregar nota..."
+          onclick="event.stopPropagation()"
+          onfocus="this.closest('.cit-card').style.background='rgba(184,151,90,0.04)'"
+          onblur="citSaveComment(this)"
+        >${c.comment || ''}</span>
+      </div>`;
+
+    let mainHTML = '';
+    if (sinIniciar) {
+      mainHTML = `
+        <div class="cit-name">${c.clientName || '—'}</div>
+        <div class="cit-count"></div>
+        <div class="cit-active-zone"><span class="cit-sin-iniciar">Sin iniciar</span></div>
+        ${commentZone}`;
+    } else if (closed) {
+      mainHTML = `
+        <div class="cit-name">${c.clientName || '—'}<span class="cit-carta-badge">✓</span></div>
+        <div class="cit-count"><span class="n">${completadas}</span>/12</div>
+        <div class="cit-active-zone">
+          <span style="font-size:0.65rem;color:var(--success)">Carta obtenida</span>
+        </div>
+        ${commentZone}`;
+    } else if (currentKey === 'carta_ciudadania') {
+      // Carta completada pero status aún no marcado como closed
+      mainHTML = `
+        <div class="cit-name">${c.clientName || '—'}</div>
+        <div class="cit-count"><span class="n">${completadas}</span>/12</div>
+        <div class="cit-active-zone">
+          <span class="cit-pill-active" style="color:var(--success);background:rgba(63,185,80,0.1);border-color:rgba(63,185,80,0.25)">Carta obtenida</span>
+        </div>
+        ${commentZone}`;
+    } else {
+      const exentoNote = hayExento ? `<span class="cit-exempt-note">conv. exento</span>` : '';
+      mainHTML = `
+        <div class="cit-name">${c.clientName || '—'}</div>
+        <div class="cit-count"><span class="n">${completadas}</span>/12</div>
+        <div class="cit-active-zone">
+          ${currentLabel ? `<span class="cit-pill-active">${currentLabel}</span>` : ''}
+          ${exentoNote}
+        </div>
+        ${commentZone}`;
+    }
+
+    // Expand de etapas pendientes
+    let expandHTML = '';
+    if (pendientes.length > 0) {
+      expandHTML = `<span class="cit-expand-label">Falta</span>` +
+        pendientes.map(l => `<span class="cit-pill-pending">${l}</span>`).join('');
+    } else if (!sinIniciar && !closed) {
+      expandHTML = `<span class="cit-expand-label" style="color:rgba(63,185,80,0.5)">Última etapa en curso</span>`;
+    }
+
+    const opacity = closed ? ' style="opacity:0.5"' : '';
+    return `<div class="cit-card" data-id="${c.id}" data-group="${group}"
+      data-client="${(c.clientName || '').toLowerCase()}"
+      onclick="citCardClick(event, '${c.id}')"${opacity}>
+      <div class="cit-main">${mainHTML}</div>
+      <div class="cit-expand">${expandHTML}</div>
+    </div>`;
+  }
+
+  function citSaveComment(el) {
+    el.closest('.cit-card').style.background = '';
+    const id   = el.dataset.id;
+    const text = el.textContent.trim();
+    const c    = cases.find(x => x.id === id);
+    if (c) { c.comment = text; saveCases(); }
+  }
+
+  function citCardClick(event, id) {
+    currentCategory = 'citizenship';
+    currentSubTipo  = null;
+    openCaseDetail(id);
+  }
+
+  function citFiltrar(q) {
+    const q2 = q.toLowerCase();
+    document.querySelectorAll('.cit-card').forEach(r => {
+      r.style.display = r.dataset.client.includes(q2) ? '' : 'none';
+    });
+    document.querySelectorAll('.cit-group-sep').forEach(sep => {
+      const group   = sep.dataset.group;
+      const visible = [...document.querySelectorAll(`.cit-card[data-group="${group}"]`)]
+        .some(r => r.style.display !== 'none');
+      sep.style.display = visible ? '' : 'none';
+    });
+  }
+
+  // ── Panel de secretaría ─────────────────────────────────────────
+  const citGroupData = {};
+  let citActiveSep   = null;
+
+  function citPanelColor(stageName) {
+    const n = (stageName || '').toLowerCase();
+    if (n.includes('carta'))    return 'rgba(63,185,80,0.55)';
+    if (n.includes('convenio')) return 'rgba(239,100,100,0.55)';
+    return 'var(--accent)';
+  }
+
+  function citPanelBars(bars) {
+    if (!bars || bars.length === 0) return '';
+    const max = Math.max(...bars.map(b => b.c), 1);
+    return bars.map(b => `
+      <div class="cit-brow">
+        <div class="cit-bname">${b.n}</div>
+        <div class="cit-btrack"><div class="cit-bfill" style="width:${Math.round(b.c/max*100)}%;background:${citPanelColor(b.n)}"></div></div>
+        <div class="cit-bn">${b.c}</div>
+      </div>`).join('');
+  }
+
+  function citPanelHTML(tag, name, nameAccent, sub, stats, secLabel, bars, isGlobal) {
+    const statsHtml = stats.map(s =>
+      `<div class="cit-p-stat ${s.cls||''}">
+        <div class="cit-p-stat-n">${s.n}</div>
+        <div class="cit-p-stat-l">${s.l}</div>
+      </div>`).join('');
+
+    const bottleneck = bars.length ? bars.reduce((a, b) => a.c > b.c ? a : b) : null;
+    const activeCount = stats.find(s => s.cls === 'ac')?.n || 1;
+    const cuelloHtml = bottleneck ? `
+      <hr class="cit-p-div">
+      <div class="cit-cuello">
+        <div class="cit-c-lbl">${isGlobal ? 'Cuello de botella' : 'Mayor acumulación'}</div>
+        <div class="cit-c-val">${bottleneck.n}</div>
+        <div class="cit-c-sub">${bottleneck.c} casos · ${Math.round(bottleneck.c / Math.max(activeCount, 1) * 100)}%</div>
+      </div>` : '';
+
+    const footHtml = isGlobal
+      ? `<div class="cit-p-hint">Click en una secretaría para ver su detalle</div>`
+      : `<div class="cit-p-back" style="display:block" onclick="citResetPanel()">← Vista global</div>`;
+
+    return `
+      <div class="cit-p-head">
+        <div class="cit-p-tag">${tag}</div>
+        <div class="cit-p-name${nameAccent ? ' accent' : ''}">${name}</div>
+        <div class="cit-p-sub">${sub}</div>
+      </div>
+      <div class="cit-p-stats">${statsHtml}</div>
+      <div class="cit-p-sec">${secLabel}</div>
+      ${citPanelBars(bars)}
+      ${cuelloHtml}
+      ${footHtml}`;
+  }
+
+  function citRenderGlobalPanel() {
+    const cits    = cases.filter(c => c.category === 'citizenship');
+    const total   = cits.length;
+    const closed  = cits.filter(c => c.status === 'closed').length;
+    const active  = total - closed;
+    const exentos = cits.filter(c => CITIZENSHIP_STAGES.some(([k]) => (c.stages?.[k] || '').toUpperCase() === 'NO')).length;
+
+    const stageCounts = {};
+    for (const c of cits) {
+      if (c.status === 'closed') continue;
+      const key = citFindCurrentKey(c.stages || {}, c.proceduralStage);
+      if (key) stageCounts[key] = (stageCounts[key] || 0) + 1;
+    }
+    const bars = CITIZENSHIP_STAGES.filter(([k]) => stageCounts[k]).map(([k, l]) => ({ n: l, c: stageCounts[k] }));
+
+    const panelEl = document.getElementById('cit-panel');
+    if (panelEl) panelEl.innerHTML = citPanelHTML(
+      'Vista general', 'Todos los casos', false,
+      `${total} casos · ${exentos} conv. exentos`,
+      [{ n: total, l: 'Total' }, { n: active, l: 'En trámite', cls: 'ac' }, { n: closed, l: 'Cartas', cls: 'gr' }, { n: exentos, l: 'Exentos' }],
+      'Distribución por etapa activa', bars, true
+    );
+  }
+
+  function citSelectGroup(group) {
+    const d = citGroupData[group];
+    if (!d) return;
+    if (citActiveSep === group) { citResetPanel(); return; }
+    if (citActiveSep) {
+      const prev = document.querySelector(`.cit-group-sep[data-group="${citActiveSep}"]`);
+      if (prev) prev.classList.remove('cit-sep-active');
+    }
+    citActiveSep = group;
+    const sep = document.querySelector(`.cit-group-sep[data-group="${group}"]`);
+    if (sep) sep.classList.add('cit-sep-active');
+
+    const active = d.total - d.cartas;
+    const panelEl = document.getElementById('cit-panel');
+    if (panelEl) panelEl.innerHTML = citPanelHTML(
+      d.juzName, d.secName, true,
+      `${d.total} casos · ${d.exentos} conv. exentos`,
+      [{ n: d.total, l: 'Total' }, { n: active, l: 'En trámite', cls: 'ac' }, { n: d.cartas, l: 'Cartas', cls: 'gr' }, { n: d.exentos, l: 'Exentos' }],
+      'Etapas activas', d.bars, false
+    );
+  }
+
+  function citResetPanel() {
+    if (citActiveSep) {
+      const prev = document.querySelector(`.cit-group-sep[data-group="${citActiveSep}"]`);
+      if (prev) prev.classList.remove('cit-sep-active');
+      citActiveSep = null;
+    }
+    citRenderGlobalPanel();
+  }
+
+  function renderCitizenship() {
+    const cits   = cases.filter(c => c.category === 'citizenship');
+    const total  = cits.length;
+    const closed = cits.filter(c => c.status === 'closed').length;
+    const active = total - closed;
+
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('cit-stat-total',  total);
+    setEl('cit-stat-active', active);
+    setEl('cit-stat-closed', closed);
+
+    const listEl = document.getElementById('cit-list');
+    if (!listEl) return;
+    if (total === 0) {
+      listEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;padding-top:16px;">No hay casos de ciudadanía cargados.</p>';
+      citRenderGlobalPanel();
+      return;
+    }
+
+    const sorted = [...cits].sort((a, b) => {
+      const jA = a.juzgado ? `${a.juzgado}-${a.secretaria || ''}` : '\uFFFF';
+      const jB = b.juzgado ? `${b.juzgado}-${b.secretaria || ''}` : '\uFFFF';
+      if (jA !== jB) return jA.localeCompare(jB, undefined, { numeric: true });
+      return (a.clientName || '').localeCompare(b.clientName || '');
+    });
+
+    // Pre-compute per-group stats
+    Object.keys(citGroupData).forEach(k => delete citGroupData[k]);
+    const groupMap = {};
+    for (const c of sorted) {
+      const g = `${c.juzgado || ''}-${c.secretaria || ''}`;
+      if (!groupMap[g]) groupMap[g] = [];
+      groupMap[g].push(c);
+    }
+    for (const [group, gc] of Object.entries(groupMap)) {
+      const stageCounts = {};
+      for (const c of gc) {
+        if (c.status === 'closed') continue;
+        const key = citFindCurrentKey(c.stages || {}, c.proceduralStage);
+        if (key) stageCounts[key] = (stageCounts[key] || 0) + 1;
+      }
+      citGroupData[group] = {
+        secName:  gc[0].secretaria ? `Sec. ${gc[0].secretaria}` : 'Sin secretaría',
+        juzName:  gc[0].juzgado    ? `Juzgado ${gc[0].juzgado}` : 'Sin juzgado',
+        total:    gc.length,
+        cartas:   gc.filter(c => c.status === 'closed').length,
+        exentos:  gc.filter(c => CITIZENSHIP_STAGES.some(([k]) => (c.stages?.[k] || '').toUpperCase() === 'NO')).length,
+        bars:     CITIZENSHIP_STAGES.filter(([k]) => stageCounts[k]).map(([k, l]) => ({ n: l, c: stageCounts[k] })),
+      };
+    }
+
+    // Render list
+    let html = '', lastGroup = null;
+    for (const c of sorted) {
+      const group = `${c.juzgado || ''}-${c.secretaria || ''}`;
+      if (group !== lastGroup) {
+        const label = c.juzgado
+          ? `Juzgado ${c.juzgado}${c.secretaria ? ` · Sec. ${c.secretaria}` : ''}`
+          : 'Sin juzgado asignado';
+        const count = groupMap[group]?.length || 0;
+        html += `<div class="cit-group-sep" data-group="${group}" onclick="citSelectGroup('${group}')">
+          ${label}<span class="cit-sep-count">${count} casos</span><span class="cit-sep-arrow">▶</span>
+        </div>`;
+        lastGroup = group;
+      }
+      html += citRenderCard(c, group);
+    }
+    listEl.innerHTML = html;
+
+    // Render panel (global or restore active group)
+    if (citActiveSep && citGroupData[citActiveSep]) {
+      const sep = document.querySelector(`.cit-group-sep[data-group="${citActiveSep}"]`);
+      if (sep) sep.classList.add('cit-sep-active');
+      citSelectGroup(citActiveSep);
+    } else {
+      citActiveSep = null;
+      citRenderGlobalPanel();
+    }
+  }
+
+  function openCitizenship() {
+    renderCitizenship();
+    showView('view-citizenship');
   }
 
   // ── Open sub-category case list (from contencioso sub-dashboard) ──
@@ -2568,6 +3099,15 @@
         <th>Estado PJN</th>
         <th>Última actuación</th>
       </tr>`;
+    } else if (cat === 'citizenship') {
+      thead.innerHTML = `<tr>
+        <th>Cliente</th>
+        <th>N° Expediente</th>
+        <th>Fecha presentación</th>
+        <th>Juz / Sec</th>
+        <th>Última etapa</th>
+        <th>Progreso</th>
+      </tr>`;
     } else {
       thead.innerHTML = `<tr>
         <th>Cliente</th>
@@ -2633,6 +3173,28 @@
           <td class="tribunal-col">${esc(c.tribunal || '—')}</td>
           <td><span class="pjn-estado ${pjnCls}">${esc(estadoPJN)}</span></td>
           <td class="ultima-col">${ultimaHtml}</td>
+        `;
+      } else if (c.category === 'citizenship') {
+        // ── Fila ciudadanía ──────────────────────────────────────
+        const etapas  = c.etapasCompletas || 0;
+        const TOTAL_C = 12;
+        const pct     = Math.round(etapas / TOTAL_C * 100);
+        const juzSec  = [c.juzgado, c.secretaria].filter(Boolean).join(' / ') || '—';
+        const barColor = c.status === 'closed' ? 'var(--success)' : 'var(--accent)';
+        tr.innerHTML = `
+          <td class="client-name">${esc(c.clientName)}</td>
+          <td class="case-number">${esc(c.caseNumber)}</td>
+          <td style="font-size:0.82rem;color:var(--text-secondary);">${esc(c.fechaPresentacion || '—')}</td>
+          <td style="font-size:0.82rem;">${esc(juzSec)}</td>
+          <td style="font-size:0.82rem;">${esc(c.proceduralStage || '—')}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:64px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;flex-shrink:0;">
+                <div style="height:4px;width:${pct}%;background:${barColor};border-radius:2px;"></div>
+              </div>
+              <span style="font-size:0.75rem;color:var(--text-secondary);">${etapas}/${TOTAL_C}</span>
+            </div>
+          </td>
         `;
       } else {
         // ── Fila estándar ────────────────────────────────────────
@@ -3781,36 +4343,48 @@
       openNotifications();
     }
 
-    // Auto-refresh every 30 seconds (pause when modal open)
-    _lastSync = Date.now();
-    setInterval(() => {
-      const modalOpen = document.getElementById('modal-overlay').classList.contains('open')
-                     || document.getElementById('modal-snippets').classList.contains('open');
-      if (modalOpen) return;
-      fetch('/cases?t=' + Date.now())
-        .then(r => r.json())
-        .then(fresh => {
-          const changed = JSON.stringify(fresh) !== JSON.stringify(cases);
-          if (changed) {
+    // Helper: re-render the currently active view
+    function _rerenderCurrentView() {
+      const v = document.querySelector('.view.active');
+      if (!v) return;
+      const id = v.id;
+      if      (id === 'view-citizenship')  renderCitizenship();
+      else if (id === 'view-case-list')    renderCaseList();
+      else if (id === 'view-dashboard')    renderDashboard();
+      else if (id === 'view-contencioso')  renderContencioso();
+      else if (id === 'view-kanban')       renderKanban();
+      // view-case-detail: no se re-renderiza automáticamente (podría pisar ediciones en curso)
+      // view-notifications: no se re-renderiza (se recarga al abrirse)
+      // view-calendar: no depende de cases directamente, omitido intencionalmente
+    }
+
+    // Live update: detecta cambios por fingerprint, re-fetchea solo cuando hay cambio real
+    let _ver = { cases: null, notif: null };
+
+    async function _checkVersion() {
+      if (document.activeElement?.isContentEditable) return;
+      try {
+        const v = await fetch('/version').then(r => r.json());
+        if (_ver.cases !== null) {
+          if (v.cases !== _ver.cases) {
+            const fresh = await fetch('/cases').then(r => r.json());
             cases = fresh;
-            _lastSync = Date.now();
-            renderDashboard();
-            if (currentCategory) renderCaseList(currentCategory);
+            _lastSync = Date.now();  // mantiene actualizado el "Actualizado hace Xs"
+            _rerenderCurrentView();
+            showToast('Datos actualizados', 'info');
           }
-        })
-        .catch(() => {});
-      fetch('/notifications?t=' + Date.now())
-        .then(r => r.json())
-        .then(fresh => {
-          if (JSON.stringify(fresh) !== JSON.stringify(notifications)) {
-            notifications = fresh;
+          if (v.notif !== _ver.notif) {
+            await loadNotifications();
             updateNotifBadge();
-            const inNotifView = document.getElementById('view-notifications').classList.contains('active');
-            if (inNotifView) renderNotifications();
+            showToast('Nuevas notificaciones', 'info');
           }
-        })
-        .catch(() => {});
-    }, 30000);
+        }
+        _ver = v;
+      } catch (_) { /* servidor no disponible — silencioso */ }
+    }
+
+    _checkVersion();
+    setInterval(_checkVersion, 30000);
 
     // Update "Actualizado hace Xs" every minute
     setInterval(updateSyncInfo, 60000);
@@ -3820,6 +4394,7 @@
       card.addEventListener('click', () => {
         const cat = card.dataset.category;
         if (cat === 'contencioso') openContencioso();
+        else if (cat === 'citizenship') openCitizenship();
         else openCaseList(cat);
       });
     });
@@ -3835,6 +4410,8 @@
     document.getElementById('notif-clear-all-btn').addEventListener('click', dismissAllNotifications);
 
     document.getElementById('cont-back-btn').addEventListener('click', () => { renderDashboard(); showView('view-dashboard'); });
+    document.getElementById('cit-back-btn').addEventListener('click', () => { renderDashboard(); showView('view-dashboard'); });
+    document.getElementById('cit-list-btn').addEventListener('click', () => openCaseList('citizenship'));
     document.getElementById('cont-kanban-btn').addEventListener('click', () => {
       // Kanban with all contencioso cases — use a combined view
       currentCategory = 'constitutional';
@@ -3859,6 +4436,7 @@
     // Case detail: back button
     document.getElementById('detail-back-btn').addEventListener('click', () => {
       if (currentSubTipo) openSubCaseList(currentSubTipo);
+      else if (currentCategory === 'citizenship') openCitizenship();
       else openCaseList(currentCategory);
     });
 
