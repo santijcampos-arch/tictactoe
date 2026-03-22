@@ -2827,6 +2827,16 @@
       docSection.style.display = 'none';
     }
 
+    // Próxima acción
+    const proximaInput = document.getElementById('detail-proxima-accion');
+    const proximaSaved = document.getElementById('proxima-accion-saved');
+    proximaInput.value = c.proximaAccion || '';
+    proximaInput.onblur = () => {
+      updateCase(c.id, { proximaAccion: proximaInput.value });
+      proximaSaved.style.display = 'inline';
+      setTimeout(() => { proximaSaved.style.display = 'none'; }, 1500);
+    };
+
     // Juzgado notes
     const juzgadoSection = document.getElementById('detail-juzgado-note-section');
     const juzgadoInput   = document.getElementById('detail-juzgado-note-input');
