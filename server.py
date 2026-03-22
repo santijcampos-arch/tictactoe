@@ -324,8 +324,6 @@ def sync_from_sheet():
     # Sync Citizenship sheet — deduplica por nombre (no siempre hay número de expediente)
     try:
         cit_rows = sync_sheet(CIT_SHEET_ID, CIT_SHEET_NAME, row_to_citizenship_case, 'Ciudadanía')
-        if cit_rows:
-            print(f"  [Debug] Columnas ciudadanía: {list(cit_rows[0].keys())}")
         existing_cit_names = {c['clientName'].lower().strip() for c in existing if c.get('category') == 'citizenship'}
         for row in cit_rows:
             nombre = (row.get('nombre') or row.get('') or '').strip()
