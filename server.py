@@ -25,6 +25,8 @@ SHEET_ID         = '1tufvCv5qVUmqma9lzaz-JFAJCp31vTHd2Cns1EXtzOA'
 SHEET_NAME       = 'Sheet1'
 CONST_SHEET_ID   = '1H0KSyS8hZxikozppoIIn0cM33fBJhboPQ7LvE28JSds'
 CONST_SHEET_NAME = 'Contencioso Administrativo'
+CIT_SHEET_ID     = '1oScLXq1C4UXnnyTBFgZ1OiApeC9Ley5GvoR1XYpdSvI'
+CIT_SHEET_NAME   = 'CCF'
 
 CASES_LOCK = CASES_FILE + '.lock'
 NOTIF_LOCK = NOTIF_FILE + '.lock'
@@ -203,6 +205,60 @@ def row_to_case(row):
         'lastUpdated':     datetime.now().isoformat(),
     }
 
+CITIZENSHIP_STAGES = [
+    ('pfa_interpol',    'PFA INTERPOL'),
+    ('renaper',         'RENAPER'),
+    ('cne',             'CNE'),
+    ('reincidencia',    'REINCIDENCIA'),
+    ('dnm',             'DNM'),
+    ('pfa_dactilo',     'PFA DACTILO'),
+    ('edicto',          'EDICTO'),
+    ('pfa_convenio',    'PFA CONVENIO'),
+    ('medios_de_vida',  'Medios de vida'),
+    ('fiscal',          'Fiscal'),
+    ('sentencia',       'Sentencia'),
+    ('carta_ciudadania','Carta de ciudadanía'),
+]
+
+def row_to_citizenship_case(row):
+    nombre = (row.get('nombre') or row.get('') or '').strip()
+    numero = (row.get('número') or row.get('numero') or '').strip()
+    fecha  = (row.get('fecha de presentación de la solicitud') or
+              row.get('fecha de presentacion de la solicitud') or '').strip()
+    juz    = (row.get('juz') or '').strip()
+    sec    = (row.get('sec') or '').strip()
+
+    stages = {}
+    last_stage_label = ''
+    count_completed  = 0
+    for key, col_name in CITIZENSHIP_STAGES:
+        val = (row.get(col_name.lower()) or '').strip()
+        stages[key] = val
+        if val:
+            last_stage_label = col_name
+            count_completed += 1
+
+    carta  = stages.get('carta_ciudadania', '')
+    status = 'closed' if carta else 'active'
+
+    return {
+        'id':               generate_id(),
+        'category':         'citizenship',
+        'clientName':       nombre,
+        'caseNumber':       numero or '—',
+        'caseTitle':        f'Ciudadanía – {nombre}',
+        'juzgado':          juz,
+        'secretaria':       sec,
+        'fechaPresentacion': fecha,
+        'proceduralStage':  last_stage_label or 'Sin iniciar',
+        'etapasCompletas':  count_completed,
+        'stages':           stages,
+        'status':           status,
+        'nextDeadline':     '',
+        'notes':            '',
+        'lastUpdated':      datetime.now().isoformat(),
+    }
+
 def sync_sheet(sheet_id, sheet_name, row_converter, label):
     """Generic: read one sheet and merge new cases into cases.json."""
     service = get_sheets_service()
@@ -265,6 +321,25 @@ def sync_from_sheet():
     except Exception as e:
         print(f"  Constitucional: error — {e}")
 
+    # Sync Citizenship sheet — deduplica por nombre (no siempre hay número de expediente)
+    try:
+        cit_rows = sync_sheet(CIT_SHEET_ID, CIT_SHEET_NAME, row_to_citizenship_case, 'Ciudadanía')
+        if cit_rows:
+            print(f"  [Debug] Columnas ciudadanía: {list(cit_rows[0].keys())}")
+        existing_cit_names = {c['clientName'].lower().strip() for c in existing if c.get('category') == 'citizenship'}
+        for row in cit_rows:
+            nombre = (row.get('nombre') or row.get('') or '').strip()
+            if not nombre:
+                continue
+            case = row_to_citizenship_case(row)
+            if nombre.lower() not in existing_cit_names:
+                existing.append(case)
+                existing_cit_names.add(nombre.lower())
+                added += 1
+        print(f"  Ciudadanía: OK")
+    except Exception as e:
+        print(f"  Ciudadanía: error — {e}")
+
     _backup(CASES_FILE)
     if _acquire_lock(CASES_LOCK):
         try:
@@ -307,6 +382,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             else:
                 data = '[]'
             self._json(200, data.encode('utf-8'))
+        elif self.path == '/version':
+            def file_sig(fp):
+                try:
+                    s = os.stat(fp)
+                    return f"{s.st_mtime:.0f}-{s.st_size}"
+                except FileNotFoundError:
+                    return "0"
+            data = {
+                "cases": file_sig(CASES_FILE),
+                "notif": file_sig(NOTIF_FILE),
+            }
+            self._json(200, json.dumps(data).encode())
         else:
             super().do_GET()
 
