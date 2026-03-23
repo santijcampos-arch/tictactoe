@@ -484,3 +484,32 @@ def query_citizenship_case(driver, case, ocr):
             continue
 
     return None, None, driver
+
+# ── Detección por keywords ────────────────────────────────────────────────────
+
+# (pattern, stage_key, value)
+# Se aplica sobre el campo 'descripcion' de cada actuación (case-insensitive).
+# Solo patrones inequívocos — todo lo ambiguo va a Groq.
+KEYWORD_PATTERNS = [
+    (r'CONTESTACION\s+INTERPOL',              'pfa_interpol',   'OK'),
+    (r'CONTESTACION\s+RENAPER',               'renaper',        'OK'),
+    (r'INFORME\s+REINCIDENCIA',               'reincidencia',   'OK'),
+    (r'(?:DE\s+)?LIBRE\s+EDICTO',             'edicto',         'OK'),
+    (r'INFORME.*CNE|CAMARA\s+NACIONAL\s+ELECTORAL', 'cne',     'OK'),
+    (r'CARTA\s+(?:DE\s+)?CIUDADAN[IÍ]A',     'carta_ciudadania', 'OK'),
+]
+
+
+def detect_stages_by_keyword(actuaciones):
+    """
+    Recorre todas las actuaciones y aplica KEYWORD_PATTERNS sobre 'descripcion'.
+    Retorna dict {stage_key: 'OK'} para las etapas detectadas.
+    Si un patrón matchea varias veces, el valor final siempre es 'OK' (idempotente).
+    """
+    detected = {}
+    for act in actuaciones:
+        desc = act.get('descripcion', '')
+        for pattern, stage, value in KEYWORD_PATTERNS:
+            if re.search(pattern, desc, re.IGNORECASE):
+                detected[stage] = value
+    return detected
