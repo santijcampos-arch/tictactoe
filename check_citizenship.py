@@ -513,3 +513,122 @@ def detect_stages_by_keyword(actuaciones):
             if re.search(pattern, desc, re.IGNORECASE):
                 detected[stage] = value
     return detected
+
+# ── Telegram context ──────────────────────────────────────────────────────────
+
+def load_telegram_ctx(client_name, telegram_data):
+    """
+    Busca mensajes del cliente en telegram_ciudadania.json.
+    Retorna string con los últimos 3 mensajes relevantes, o '' si no hay.
+    telegram_data: dict cargado de telegram_ciudadania.json (puede ser None).
+    """
+    if not telegram_data or not client_name:
+        return ''
+
+    apellido = client_name.strip().upper().split()[0] if client_name.strip() else ''
+    if not apellido or len(apellido) < 3:
+        return ''
+
+    msgs = []
+    for grupo, entradas in telegram_data.items():
+        for entry in entradas:
+            cliente_entry = (entry.get('cliente') or '').upper()
+            if apellido in cliente_entry:
+                msgs.append(f"[{entry['fecha']}] {entry['de']}: {entry['texto'][:200]}")
+
+    if not msgs:
+        return ''
+
+    ultimos = msgs[-3:]  # los 3 más recientes (la lista ya viene ordenada por fecha)
+    return '\n'.join(ultimos)
+
+# ── Análisis Groq ─────────────────────────────────────────────────────────────
+
+def analizar_ciudadania(case, actuaciones, ya_detectadas, telegram_ctx):
+    """
+    Llama a Groq con todas las actuaciones del caso.
+    Retorna dict con keys: stages, requires_action, action_note, last_relevant_stage.
+    Retorna None si Groq no está disponible o falla.
+    """
+    if not _GROQ_AVAILABLE or not actuaciones:
+        return None
+
+    # Serializar actuaciones
+    actos_texto = '\n'.join(
+        f"[{a['fecha']}] {a['descripcion']}"
+        for a in actuaciones
+        if a.get('descripcion')
+    )
+
+    # Etapas ya detectadas por keyword (no re-evaluar)
+    ya_str = ', '.join(f"{k}={v}" for k, v in ya_detectadas.items()) if ya_detectadas else 'ninguna'
+
+    prompt = f"""Sos un asistente para un estudio de abogados argentino especializado en ciudadanía.
+Analizás las actuaciones de un expediente de ciudadanía del PJN y determinás:
+1. El estado actual de cada etapa procesal
+2. Si hay algo que el estudio debe atender (pedido de documentación, dictamen desfavorable, sentencia de rechazo, pedido de aclaración, etc.)
+
+Etapas a evaluar: pfa_interpol, renaper, cne, reincidencia, dnm, pfa_dactilo, edicto, pfa_convenio, medios_de_vida, fiscal, sentencia, carta_ciudadania
+
+Ya fueron detectadas automáticamente (no re-evaluar): {ya_str}
+
+Actuaciones del expediente (de más antigua a más reciente):
+{actos_texto}
+
+{f"Contexto adicional de comunicaciones con el cliente:{chr(10)}{telegram_ctx}" if telegram_ctx else ""}
+
+Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
+{{
+  "stages": {{
+    "pfa_interpol": "OK" o "NO" o "",
+    "renaper": "OK" o "NO" o "",
+    "cne": "OK" o "NO" o "",
+    "reincidencia": "OK" o "NO" o "",
+    "dnm": "OK" o "NO" o "",
+    "pfa_dactilo": "OK" o "NO" o "",
+    "edicto": "OK" o "NO" o "",
+    "pfa_convenio": "OK" o "NO" o "",
+    "medios_de_vida": "OK" o "NO" o "",
+    "fiscal": "OK" o "NO" o "",
+    "sentencia": "OK" o "NO" o "",
+    "carta_ciudadania": "OK" o "NO" o ""
+  }},
+  "requires_action": true o false,
+  "action_note": "descripción específica de qué debe hacer el estudio (vacío si no requiere acción)",
+  "last_relevant_stage": "nombre de la etapa más avanzada detectada"
+}}
+
+Solo incluí en "stages" las etapas que podás determinar con certeza. Dejá "" para las que no tengas información.
+Si "requires_action" es true, "action_note" debe ser específico: qué se pide, en qué actuación, con qué fecha."""
+
+    global _GROQ_LAST
+    with _GROQ_SEM:
+        with _GROQ_LOCK:
+            ahora = time.time()
+            espera = 5.0 - (ahora - _GROQ_LAST)
+            if espera > 0:
+                time.sleep(espera)
+            _GROQ_LAST = time.time()
+
+        try:
+            resp = _GROQ_CLIENT.chat.completions.create(
+                model='llama-3.1-8b-instant',
+                messages=[{'role': 'user', 'content': prompt}],
+                max_tokens=600,
+            )
+            raw = resp.choices[0].message.content.strip()
+            # Extraer JSON si viene envuelto en markdown
+            m = re.search(r'\{.*\}', raw, re.DOTALL)
+            if not m:
+                print(f"    [Groq] Respuesta sin JSON: {raw[:100]}")
+                return None
+            result = json.loads(m.group(0))
+            print(f"    [Groq] Análisis OK (requires_action={result.get('requires_action')})")
+            return result
+        except json.JSONDecodeError as e:
+            print(f"    [Groq] JSON inválido: {e}")
+            return None
+        except Exception as e:
+            case_num = case.get('caseNumber', '?')
+            print(f"    [Groq] Error en {case_num}: {e}")
+            return None
