@@ -303,7 +303,6 @@ def es_dia_habil():
         return False
 
     if hoy.year > 2027:
-        import sys
         print(f"  [ADVERTENCIA] Año {hoy.year} sin feriados cargados — actualizar FERIADOS en check_citizenship.py", file=sys.stderr)
 
     return True
