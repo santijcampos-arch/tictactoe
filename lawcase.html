@@ -1435,6 +1435,36 @@
       vertical-align: middle;
       opacity: 0.9;
     }
+    /* Case action alert (shown when nextAction is set) */
+    .case-action-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      background: rgba(184, 151, 90, 0.06);
+      border-left: 3px solid #b8975a;
+      border-radius: 4px;
+    }
+    .case-action-alert__icon {
+      color: #b8975a;
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .case-action-alert__label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #b8975a;
+      margin-bottom: 4px;
+    }
+    .case-action-alert__text {
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -1671,6 +1701,13 @@
     <div class="detail-card">
       <h3 id="detail-case-title">—</h3>
       <div id="detail-possibly-closed-alert" class="possibly-closed-alert" style="display:none;"></div>
+      <div id="detail-action-alert" class="case-action-alert" style="display:none;">
+        <div class="case-action-alert__icon">⚠</div>
+        <div class="case-action-alert__body">
+          <div class="case-action-alert__label">Acción requerida</div>
+          <div class="case-action-alert__text" id="detail-action-text"></div>
+        </div>
+      </div>
       <div class="detail-grid">
         <div class="detail-field">
           <label>Cliente</label>
@@ -3302,6 +3339,17 @@
       closedAlert.innerHTML = `${icon('triangle-alert',14)} <strong>Posiblemente cerrado</strong> — ${esc(c.possibleClosedReason || 'Verificar en PJN')}`;
     } else {
       closedAlert.style.display = 'none';
+    }
+
+    // Action required alert (nextAction)
+    const actionAlert = document.getElementById('detail-action-alert');
+    const actionText  = document.getElementById('detail-action-text');
+    if (c.nextAction) {
+      actionAlert.style.display = '';
+      actionText.textContent = c.nextAction;
+    } else {
+      actionAlert.style.display = 'none';
+      actionText.textContent = '';
     }
 
     // Tipo de acción + snippets button
