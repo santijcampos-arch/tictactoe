@@ -680,7 +680,7 @@ def _update_last_check(case_id):
 
 # ── Procesamiento por caso ────────────────────────────────────────────────────
 
-def process_case(driver, case, cases, telegram_data):
+def process_case(driver, case, ocr, cases, telegram_data):
     """
     Procesa un caso de ciudadanía:
     1. Navega al PJN
@@ -693,7 +693,6 @@ def process_case(driver, case, cases, telegram_data):
     """
     case_number = case.get('caseNumber', '?')
     client_name = case.get('clientName', '?')
-    ocr = ddddocr.DdddOcr(show_ad=False)
 
     actuaciones, pjn_last_date, driver = query_citizenship_case(driver, case, ocr)
     if actuaciones is None:
@@ -746,17 +745,19 @@ def process_case(driver, case, cases, telegram_data):
                 all_cases = json.load(f)
             idx = next((i for i, c in enumerate(all_cases) if c.get('id') == case['id']), None)
             if idx is not None:
-                all_cases[idx]['stages']       = final_stages
+                all_cases[idx]['stages']        = final_stages
                 all_cases[idx]['lastActionDate'] = pjn_last_date
-                all_cases[idx]['lastPjnCheck']  = datetime.now().isoformat()
+                all_cases[idx]['lastPjnCheck']   = datetime.now().isoformat()
                 if groq_result and groq_result.get('requires_action'):
                     all_cases[idx]['nextAction'] = groq_result.get('action_note', '')
                 elif not groq_result:
                     pass  # no tocar nextAction si Groq falló
-                # Si Groq corrió exitosamente y no requires_action, limpiar nextAction
-                elif groq_result and not groq_result.get('requires_action'):
+                else:
                     all_cases[idx]['nextAction'] = ''
             _atomic_write_json(CASES_FILE, all_cases)
+        except Exception as e:
+            print(f"    [ERROR] No se pudo escribir cases.json: {e}")
+            return driver
         finally:
             _release_file_lock(_CASES_FILE_LOCK_PATH)
 
@@ -784,12 +785,13 @@ def process_case(driver, case, cases, telegram_data):
 
 def run_worker(worker_id, cases_subset, cases, telegram_data):
     driver = setup_driver()
+    ocr = ddddocr.DdddOcr(show_ad=False)
     updated = 0
     try:
         for case in cases_subset:
             name = case.get('clientName') or case.get('caseNumber', '?')
             print(f"  [W{worker_id}] [{case.get('caseNumber','?')}] {name}")
-            driver = process_case(driver, case, cases, telegram_data)
+            driver = process_case(driver, case, ocr, cases, telegram_data)
             time.sleep(8)  # evitar ráfagas al PJN
             updated += 1
     finally:
