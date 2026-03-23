@@ -1421,6 +1421,20 @@
       border: 1px solid rgba(255,255,255,0.07); white-space: nowrap;
     }
     .cit-carta-badge { font-size: 0.6rem; color: var(--success); font-weight: 600; margin-left: 5px; }
+    /* Citizenship action required badge */
+    .cit-action-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      font-size: 0.65rem;
+      color: #b8975a;
+      margin-left: 5px;
+      flex-shrink: 0;
+      vertical-align: middle;
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -2723,13 +2737,13 @@
     let mainHTML = '';
     if (sinIniciar) {
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}</div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}</div>
         <div class="cit-count"></div>
         <div class="cit-active-zone"><span class="cit-sin-iniciar">Sin iniciar</span></div>
         ${commentZone}`;
     } else if (closed) {
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}<span class="cit-carta-badge">✓</span></div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}<span class="cit-carta-badge">✓</span></div>
         <div class="cit-count"><span class="n">${completadas}</span>/12</div>
         <div class="cit-active-zone">
           <span style="font-size:0.65rem;color:var(--success)">Carta obtenida</span>
@@ -2738,7 +2752,7 @@
     } else if (currentKey === 'carta_ciudadania') {
       // Carta completada pero status aún no marcado como closed
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}</div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}</div>
         <div class="cit-count"><span class="n">${completadas}</span>/12</div>
         <div class="cit-active-zone">
           <span class="cit-pill-active" style="color:var(--success);background:rgba(63,185,80,0.1);border-color:rgba(63,185,80,0.25)">Carta obtenida</span>
@@ -2747,7 +2761,7 @@
     } else {
       const exentoNote = hayExento ? `<span class="cit-exempt-note">conv. exento</span>` : '';
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}</div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}</div>
         <div class="cit-count"><span class="n">${completadas}</span>/12</div>
         <div class="cit-active-zone">
           ${currentLabel ? `<span class="cit-pill-active">${currentLabel}</span>` : ''}
