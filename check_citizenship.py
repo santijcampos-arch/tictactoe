@@ -306,3 +306,181 @@ def es_dia_habil():
         print(f"  [ADVERTENCIA] Año {hoy.year} sin feriados cargados — actualizar FERIADOS en check_citizenship.py", file=sys.stderr)
 
     return True
+
+# ── Parseo de expediente ──────────────────────────────────────────────────────
+
+def parse_case_number(case_number):
+    """'CAF 031904/2025' → ('2', '31904', '2025'). None si no reconoce."""
+    m = re.match(r'([A-Z]+)\s+0*(\d+)/(\d{4})', case_number.strip())
+    if not m:
+        return None, None, None
+    code = JURISDICTION_CODES.get(m.group(1))
+    return code, m.group(2), m.group(3)
+
+
+def parse_citizenship_case_number(case_number):
+    """
+    Extiende parse_case_number con fallback a CCF para números sin prefijo.
+    '24590/2024' → ('3', '24590', '2024')
+    'CCF 020934/2022' → ('3', '20934', '2022')
+    """
+    code, number, year = parse_case_number(case_number)
+    if code:
+        return code, number, year
+    # Número puro sin prefijo: XXXXX/YYYY → default CCF
+    m = re.match(r'0*(\d+)/(\d{4})', case_number.strip())
+    if m:
+        return JURISDICTION_CODES['CCF'], m.group(1), m.group(2)
+    return None, None, None
+
+# ── Extracción de actuaciones ─────────────────────────────────────────────────
+
+def get_actuaciones_cit(driver):
+    """
+    Extrae TODAS las filas de la tabla de actuaciones del expediente actual.
+    Retorna lista de dicts [{tipo, descripcion, fecha, oficina}] de más antigua a más reciente.
+    No abre documentos — solo lee el texto de la tabla.
+    """
+    actuaciones = []
+    try:
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        tables = soup.find_all('table')
+
+        tabla = None
+        for t in tables:
+            txt = t.get_text(' ')
+            if not re.search(r'\d{2}/\d{2}/\d{4}', txt):
+                continue
+            rows = t.find_all('tr')
+            if len(rows) < 2:
+                continue
+            header = rows[0].get_text(' ').lower()
+            if any(w in header for w in ['tipo', 'descripci', 'fecha', 'actu', 'descargar']):
+                tabla = t
+                break
+
+        if tabla is None:
+            print("    [ACT] No se encontró tabla de actuaciones")
+            return actuaciones
+
+        filas = tabla.find_all('tr')[1:]  # saltar encabezado
+        for fila in filas:
+            celdas = [td.get_text(' ', strip=True) for td in fila.find_all('td')]
+            celdas = [c for c in celdas if c and c not in ('Descargar', 'Ver', 'Descargar Actuación')]
+            if not celdas:
+                continue
+
+            fecha_m = next(
+                (re.search(r'\d{2}/\d{2}/\d{4}', c) for c in celdas if re.search(r'\d{2}/\d{2}/\d{4}', c)),
+                None
+            )
+            fecha = fecha_m.group(0) if fecha_m else ''
+
+            def _val(c):
+                return c.split(':\n', 1)[1].strip() if ':\n' in c else c.strip()
+
+            tipo_cell    = next((c for c in celdas if re.match(r'tipo\s+actua', c, re.I)), '')
+            detalle_cell = next((c for c in celdas if re.match(r'detalle', c, re.I)), '')
+            oficina_cell = next((c for c in celdas if re.match(r'oficina', c, re.I)), '')
+
+            tipo    = _val(tipo_cell)    if tipo_cell    else ''
+            detalle = _val(detalle_cell) if detalle_cell else ''
+            oficina = _val(oficina_cell) if oficina_cell else ''
+
+            if tipo or detalle:
+                descripcion = ' — '.join(filter(None, [tipo, detalle]))
+            else:
+                _RUIDO = re.compile(r'descargar|^\s*ver\s*$|^fecha:|^[A-Z]{2,4}\s*$', re.I)
+                otros = [c for c in celdas if c and c != fecha
+                         and not re.search(r'\d{2}/\d{2}/\d{4}', c)
+                         and not _RUIDO.search(c)]
+                descripcion = ' — '.join(filter(None, otros))
+
+            if descripcion or fecha:
+                actuaciones.append({
+                    'fecha': fecha,
+                    'tipo': tipo,
+                    'descripcion': descripcion,
+                    'oficina': oficina,
+                })
+
+        print(f"    [ACT] {len(actuaciones)} actuaciones extraídas")
+    except Exception as e:
+        print(f"    [ACT] Error: {e}")
+
+    # Devolver de más antigua a más reciente (el PJN muestra más reciente primero)
+    return list(reversed(actuaciones))
+
+def query_citizenship_case(driver, case, ocr):
+    """
+    Navega al PJN, busca el expediente, extrae actuaciones.
+    Retorna (actuaciones, pjn_last_date, driver) — driver puede ser reemplazado si Chrome muere.
+    actuaciones = None si no se pudo consultar.
+    """
+    case_number = case.get('caseNumber', '')
+    code, number, year = parse_citizenship_case_number(case_number)
+    if not code:
+        print(f"    Expediente no reconocido: {case_number}")
+        return None, None, driver
+
+    chrome_restarts = 0
+    attempt = 0
+    while attempt < 5:
+        attempt += 1
+        if attempt > 1:
+            print(f"    Reintento {attempt}/5...")
+        try:
+            driver.get(PJN_URL)
+
+            if not wait_for(driver, 15, EC.presence_of_element_located((By.ID, 'formPublica:camaraNumAni'))):
+                print("    Página no cargó")
+                continue
+
+            Select(driver.find_element(By.ID, 'formPublica:camaraNumAni')).select_by_value(code)
+            driver.find_element(By.ID, 'formPublica:numero').send_keys(number)
+            driver.find_element(By.ID, 'formPublica:anio').send_keys(year)
+
+            if not solve_captcha(driver, ocr):
+                continue
+
+            driver.execute_script(
+                "arguments[0].click();",
+                driver.find_element(By.ID, 'formPublica:buscarPorNumeroButton')
+            )
+
+            if not wait_for(driver, 30, EC.presence_of_element_located(
+                (By.XPATH, "//*[contains(text(),'Expediente:') or contains(text(),'Datos Generales')]")
+            )):
+                print("    Resultado no llegó")
+                continue
+
+            # Verificar que no diga "no encontrado"
+            body_text = driver.find_element(By.TAG_NAME, 'body').text
+            if re.search(r'no\s+se\s+encontr[oó]|sin\s+resultado', body_text, re.IGNORECASE):
+                print(f"    Expediente no encontrado en PJN: {case_number}")
+                return None, None, driver
+
+            actuaciones = get_actuaciones_cit(driver)
+
+            # Fecha de última actuación (primera en la lista original del PJN = más reciente)
+            # actuaciones está ordenada de antigua a reciente, entonces la última es la más reciente
+            pjn_last_date = actuaciones[-1]['fecha'] if actuaciones else None
+
+            return actuaciones, pjn_last_date, driver
+
+        except Exception as e:
+            msg = str(e).split('\n')[0][:120]
+            print(f"    Error: {msg}")
+            try:
+                driver.title
+            except Exception:
+                if chrome_restarts >= 2:
+                    print("    Chrome muerto demasiadas veces, abandonando.")
+                    return None, None, driver
+                chrome_restarts += 1
+                print(f"    Chrome muerto ({chrome_restarts}/2), reiniciando...")
+                quit_driver(driver)
+                driver = setup_driver()
+            continue
+
+    return None, None, driver
