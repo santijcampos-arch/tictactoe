@@ -632,3 +632,246 @@ Si "requires_action" es true, "action_note" debe ser específico: qué se pide, 
             case_num = case.get('caseNumber', '?')
             print(f"    [Groq] Error en {case_num}: {e}")
             return None
+
+
+# ── Merge de stages ───────────────────────────────────────────────────────────
+
+def merge_stages(existing, detected):
+    """
+    Combina stages existentes con los recién detectados (keyword + Groq).
+    Reglas:
+    - 'OK' es permanente (nunca se baja)
+    - 'NO' puede ser sobreescrito por 'OK' (informe que fue favorable)
+    - '' se actualiza libremente
+    """
+    result = dict(existing) if existing else {}
+    for key, new_val in detected.items():
+        current = result.get(key, '')
+        if current == 'OK':
+            continue  # OK es permanente
+        if new_val in ('OK', 'NO'):
+            result[key] = new_val
+    return result
+
+
+def _update_last_check(case_id):
+    """
+    Actualiza solo lastPjnCheck para el caso dado.
+    Thread-safe vía _CASES_LOCK + file lock.
+    Usar cuando el smart skip detecta que no hay cambios.
+    """
+    with _CASES_LOCK:
+        if not _acquire_file_lock(_CASES_FILE_LOCK_PATH):
+            print(f"    [WARN] No se pudo adquirir lock para update_last_check")
+            return
+        try:
+            with open(CASES_FILE, encoding='utf-8') as f:
+                all_cases = json.load(f)
+            for c in all_cases:
+                if c.get('id') == case_id:
+                    c['lastPjnCheck'] = datetime.now().isoformat()
+                    break
+            _atomic_write_json(CASES_FILE, all_cases)
+        except Exception as e:
+            print(f"    [WARN] Error en update_last_check: {e}")
+        finally:
+            _release_file_lock(_CASES_FILE_LOCK_PATH)
+
+
+# ── Procesamiento por caso ────────────────────────────────────────────────────
+
+def process_case(driver, case, cases, telegram_data):
+    """
+    Procesa un caso de ciudadanía:
+    1. Navega al PJN
+    2. Smart skip si no hay cambios
+    3. Keyword detection
+    4. Groq si hay etapas sin resolver
+    5. Merge stages + write cases.json
+    6. Notificaciones
+    Modifica 'cases' in-place (lista compartida, protegida por _CASES_LOCK).
+    """
+    case_number = case.get('caseNumber', '?')
+    client_name = case.get('clientName', '?')
+    ocr = ddddocr.DdddOcr(show_ad=False)
+
+    actuaciones, pjn_last_date, driver = query_citizenship_case(driver, case, ocr)
+    if actuaciones is None:
+        print(f"    Sin resultados para {case_number}")
+        return driver
+
+    # Smart skip: si la fecha de la última actuación no cambió, solo actualizar lastPjnCheck
+    if (pjn_last_date
+            and pjn_last_date == case.get('lastActionDate')
+            and case.get('lastPjnCheck')):
+        print(f"    Sin cambios desde {pjn_last_date} — saltando análisis")
+        _update_last_check(case['id'])
+        return driver
+
+    # Keyword detection
+    keyword_stages = detect_stages_by_keyword(actuaciones)
+    if keyword_stages:
+        print(f"    [KW] Detectadas: {', '.join(keyword_stages.keys())}")
+
+    # Determinar si quedan etapas sin resolver
+    existing_stages = case.get('stages', {})
+    merged_so_far   = merge_stages(existing_stages, keyword_stages)
+    all_stage_keys  = [k for k, _ in CITIZENSHIP_STAGES]
+    unresolved      = [k for k in all_stage_keys if not merged_so_far.get(k)]
+
+    # Groq: solo si hay etapas sin resolver
+    groq_result = None
+    if unresolved:
+        telegram_ctx = load_telegram_ctx(client_name, telegram_data)
+        groq_result  = analizar_ciudadania(case, actuaciones, keyword_stages, telegram_ctx)
+
+    groq_stages = (groq_result or {}).get('stages', {})
+    final_stages = merge_stages(merged_so_far, groq_stages)
+
+    # Detectar etapas completadas por primera vez en esta corrida
+    prev_sentencia      = existing_stages.get('sentencia', '')
+    prev_carta          = existing_stages.get('carta_ciudadania', '')
+    new_sentencia       = final_stages.get('sentencia', '')
+    new_carta           = final_stages.get('carta_ciudadania', '')
+    sentencia_nueva     = (prev_sentencia != new_sentencia and new_sentencia in ('OK', 'NO'))
+    carta_nueva         = (prev_carta != new_carta and new_carta == 'OK')
+
+    # Escribir cases.json (thread-safe)
+    with _CASES_LOCK:
+        if not _acquire_file_lock(_CASES_FILE_LOCK_PATH):
+            print(f"    [WARN] No se pudo adquirir lock de cases.json")
+            return driver
+        try:
+            with open(CASES_FILE, encoding='utf-8') as f:
+                all_cases = json.load(f)
+            idx = next((i for i, c in enumerate(all_cases) if c.get('id') == case['id']), None)
+            if idx is not None:
+                all_cases[idx]['stages']       = final_stages
+                all_cases[idx]['lastActionDate'] = pjn_last_date
+                all_cases[idx]['lastPjnCheck']  = datetime.now().isoformat()
+                if groq_result and groq_result.get('requires_action'):
+                    all_cases[idx]['nextAction'] = groq_result.get('action_note', '')
+                elif not groq_result:
+                    pass  # no tocar nextAction si Groq falló
+                # Si Groq corrió exitosamente y no requires_action, limpiar nextAction
+                elif groq_result and not groq_result.get('requires_action'):
+                    all_cases[idx]['nextAction'] = ''
+            _atomic_write_json(CASES_FILE, all_cases)
+        finally:
+            _release_file_lock(_CASES_FILE_LOCK_PATH)
+
+    print(f"    OK {case_number} — stages: {sum(1 for v in final_stages.values() if v == 'OK')}/12 completas")
+
+    # Notificaciones
+    if groq_result and groq_result.get('requires_action'):
+        msg = groq_result.get('action_note', 'Acción requerida — revisar expediente')
+        add_notification(case, 'citizenship_update', msg)
+        print(f"    [NOTIF] Acción requerida: {msg[:80]}")
+
+    if sentencia_nueva:
+        estado = 'favorable' if new_sentencia == 'OK' else 'desfavorable/pendiente'
+        add_notification(case, 'citizenship_update', f"Sentencia dictada ({estado}) — {case_number}")
+        print(f"    [NOTIF] Sentencia detectada")
+
+    if carta_nueva:
+        add_notification(case, 'citizenship_update', f"Carta de ciudadanía lista — {client_name}")
+        print(f"    [NOTIF] Carta de ciudadanía")
+
+    return driver
+
+
+# ── Worker ────────────────────────────────────────────────────────────────────
+
+def run_worker(worker_id, cases_subset, cases, telegram_data):
+    driver = setup_driver()
+    updated = 0
+    try:
+        for case in cases_subset:
+            name = case.get('clientName') or case.get('caseNumber', '?')
+            print(f"  [W{worker_id}] [{case.get('caseNumber','?')}] {name}")
+            driver = process_case(driver, case, cases, telegram_data)
+            time.sleep(8)  # evitar ráfagas al PJN
+            updated += 1
+    finally:
+        quit_driver(driver)
+    print(f"  [W{worker_id}] Terminado — {updated} casos procesados.")
+    return updated
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+def main():
+    print('=' * 60)
+    print('  NegroLex — PJN Citizenship Checker')
+    print(f'  Workers: {N_WORKERS}')
+    print('=' * 60)
+    print()
+
+    if AUTO and not es_dia_habil():
+        print(f"  Hoy ({datetime.now().strftime('%A %d/%m/%Y')}) no es día hábil — saliendo.")
+        return
+
+    if not os.path.exists(CASES_FILE):
+        print('No se encontró cases.json.')
+        return
+
+    with open(CASES_FILE, encoding='utf-8') as f:
+        cases = json.load(f)
+
+    # Cargar contexto de Telegram (opcional)
+    telegram_data = None
+    if os.path.exists(TELEGRAM_FILE):
+        try:
+            with open(TELEGRAM_FILE, encoding='utf-8') as f:
+                telegram_data = json.load(f)
+            print(f"  [Telegram] {len(telegram_data)} grupos cargados.")
+        except Exception as e:
+            print(f"  [Telegram] No disponible: {e}")
+
+    # Filtrar casos de ciudadanía con número de expediente
+    cit_cases = [
+        c for c in cases
+        if c.get('category') == 'citizenship'
+        and c.get('caseNumber')
+        and parse_citizenship_case_number(c['caseNumber'])[0]  # número parseable
+    ]
+    if LIMIT:
+        cit_cases = cit_cases[:LIMIT]
+
+    if not cit_cases:
+        print('No hay casos de ciudadanía con número de expediente.')
+        return
+
+    print(f"  {len(cit_cases)} casos de ciudadanía encontrados.")
+    print(f"  Distribuyendo entre {N_WORKERS} workers...\n")
+
+    chunks = [[] for _ in range(N_WORKERS)]
+    for i, case in enumerate(cit_cases):
+        chunks[i % N_WORKERS].append(case)
+
+    total_updated = 0
+    with ThreadPoolExecutor(max_workers=N_WORKERS) as executor:
+        futures = {
+            executor.submit(run_worker, i + 1, chunk, cases, telegram_data): i
+            for i, chunk in enumerate(chunks) if chunk
+        }
+        for future in as_completed(futures):
+            try:
+                total_updated += future.result()
+            except Exception as e:
+                print(f"  [ERROR] Worker falló: {e}")
+
+    print()
+    print('=' * 60)
+    print(f"  Listo. {total_updated} casos procesados.")
+    print('=' * 60)
+
+    if not AUTO:
+        try:
+            input('\nPresioná Enter para salir.')
+        except EOFError:
+            pass
+
+
+if __name__ == '__main__':
+    main()
