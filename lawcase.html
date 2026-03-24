@@ -3383,7 +3383,7 @@
     // Jura block (citizenship only)
     const juraBlock = document.getElementById('detail-jura-block');
     const juraLabel = document.getElementById('detail-jura-label');
-    if (c.juraCompletada || c.fechaJura) {
+    if (c.category === 'citizenship' && (c.juraCompletada || c.fechaJura)) {
       juraBlock.style.display = '';
       juraBlock.className = 'detail-jura-block ' +
         (c.juraCompletada ? 'cit-jura-completada' : 'cit-jura-pendiente');
