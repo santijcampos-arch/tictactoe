@@ -22,6 +22,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from bs4 import BeautifulSoup
 import ddddocr
+import requests
+import pdfplumber
+from dateutil.relativedelta import relativedelta
 
 FOLDER     = os.path.dirname(os.path.abspath(__file__))
 CASES_FILE = os.path.join(FOLDER, 'cases.json')
@@ -333,13 +336,40 @@ def parse_citizenship_case_number(case_number):
         return JURISDICTION_CODES['CCF'], m.group(1), m.group(2)
     return None, None, None
 
+# ── PDF ────────────────────────────────────────────────────────────────────────
+
+def descargar_pdf(url, cookies, headers, dest):
+    try:
+        resp = requests.get(url, cookies=cookies, headers=headers, timeout=30)
+        if resp.status_code != 200:
+            return False
+        ct = resp.headers.get('Content-Type', '')
+        if 'pdf' not in ct.lower() and resp.content[:4] != b'%PDF':
+            return False
+        with open(dest, 'wb') as f:
+            f.write(resp.content)
+        return True
+    except Exception:
+        return False
+
+
+def extraer_texto_pdf(path):
+    try:
+        with pdfplumber.open(path) as pdf:
+            paginas = [p.extract_text() or '' for p in pdf.pages]
+        texto = '\n\n'.join(p for p in paginas if p.strip())
+        return re.sub(r'\n{3,}', '\n\n', texto).strip()
+    except Exception as e:
+        return f'[ERROR pdfplumber: {e}]'
+
 # ── Extracción de actuaciones ─────────────────────────────────────────────────
 
 def get_actuaciones_cit(driver):
     """
     Extrae TODAS las filas de la tabla de actuaciones del expediente actual.
-    Retorna lista de dicts [{tipo, descripcion, fecha, oficina}] de más antigua a más reciente.
+    Retorna lista de dicts [{tipo, descripcion, fecha, oficina, pdf_href}] de más antigua a más reciente.
     No abre documentos — solo lee el texto de la tabla.
+    pdf_href es str solo si el tipo es FIRMA DESPACHO y hay botón de descarga, None en los demás casos.
     """
     actuaciones = []
     try:
@@ -365,6 +395,22 @@ def get_actuaciones_cit(driver):
 
         filas = tabla.find_all('tr')[1:]  # saltar encabezado
         for fila in filas:
+            # Extraer href del botón de descarga si existe
+            pdf_href = None
+            for td in fila.find_all('td'):
+                a = td.find('a', href=True)
+                if a and a['href']:
+                    href = a['href']
+                    if 'descargar' in href.lower() or href.lower().endswith('.pdf') or 'documento' in href.lower():
+                        pdf_href = href
+                        break
+                # También buscar forms con action
+                form = td.find('form')
+                if form and form.get('action'):
+                    action = form['action']
+                    if 'descargar' in action.lower() or 'documento' in action.lower():
+                        pdf_href = action
+                        break
             celdas = [td.get_text(' ', strip=True) for td in fila.find_all('td')]
             celdas = [c for c in celdas if c and c not in ('Descargar', 'Ver', 'Descargar Actuación')]
             if not celdas:
@@ -397,11 +443,14 @@ def get_actuaciones_cit(driver):
                 descripcion = ' — '.join(filter(None, otros))
 
             if descripcion or fecha:
+                # pdf_href: str solo si FIRMA DESPACHO con botón, None en todos los demás casos
+                act_pdf_href = pdf_href if tipo.upper().strip() == 'FIRMA DESPACHO' and pdf_href else None
                 actuaciones.append({
                     'fecha': fecha,
                     'tipo': tipo,
                     'descripcion': descripcion,
                     'oficina': oficina,
+                    'pdf_href': act_pdf_href,
                 })
 
         print(f"    [ACT] {len(actuaciones)} actuaciones extraídas")
