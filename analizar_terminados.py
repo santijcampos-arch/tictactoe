@@ -211,9 +211,9 @@ def filtrar_patrones_50pct(resultados_casos):
     for r in resultados_casos:
         if not r:
             continue
-        for etapa in r.get('etapas_detectadas', []):
+        for etapa in (r.get('etapas_detectadas') or []):
             conteo_etapas[etapa] = conteo_etapas.get(etapa, 0) + 1
-        for act in r.get('actuaciones_inusuales', []):
+        for act in (r.get('actuaciones_inusuales') or []):
             conteo_inusuales[act] = conteo_inusuales.get(act, 0) + 1
 
     umbral = n / 2
