@@ -362,6 +362,209 @@ def extraer_texto_pdf(path):
     except Exception as e:
         return f'[ERROR pdfplumber: {e}]'
 
+# ── Detección de jura ──────────────────────────────────────────────────────────
+
+# Keywords para detectar turno asignado (Paso 1)
+_JURA_KEYWORDS = [
+    'TURNO JURA', 'FECHA JURA', 'FECHA DE JURA', 'NOTA JURA',
+    'JURA CIUDADANIA', 'CERTIFICADO DE JURAMENTO',
+    'ASIGNA TURNO PARA JURA', 'SOLICITA FECHA DE JURA',
+]
+
+# Keywords para detectar jura completada (Paso 3)
+_JURA_COMPLETADA_KEYWORDS = [
+    'NOTA PRESTA JURAMENTO', 'NOTA DE JURA', 'ACTA DE JURA',
+    'PRESTA JURAMENTO Y RETIRA CARTA', 'NOTA DE JURAMENTO',
+    'CONSTANCIA JURA', 'NOTA JURA CIUDADANIA', 'CERTIFICADO DE JURAMENTO',
+]
+
+# Meses en español para parsear fechas de texto
+_MESES = {
+    'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+    'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+    'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12,
+}
+
+
+def _parsear_fecha_texto(m, act_fecha_fallback):
+    """
+    Convierte un match de Patrón 1 o 2 (grupos: día, mes-palabra, año) a 'YYYY-MM-DD'.
+    Si el mes no está en _MESES (incluye 'próximo'), usa día 15 del mes siguiente
+    a act_fecha_fallback (formato 'DD/MM/YYYY').
+    """
+    dia_str = m.group(1)
+    mes_str = m.group(2).lower()
+    anio_str = m.group(3)
+    mes_num = _MESES.get(mes_str)
+    if mes_num:
+        try:
+            return datetime(int(anio_str), mes_num, int(dia_str)).strftime('%Y-%m-%d')
+        except ValueError:
+            pass
+    # Fallback: día 15 del mes siguiente a act_fecha_fallback
+    try:
+        base = datetime.strptime(act_fecha_fallback, '%d/%m/%Y')
+        siguiente = (base + relativedelta(months=1)).replace(day=15)
+        return siguiente.strftime('%Y-%m-%d')
+    except Exception:
+        return None
+
+
+def _extraer_fecha_jura(act, cookies, headers):
+    """
+    Intenta extraer la fecha de jura de una actuación (Paso 2).
+    Orden: A) regex en descripción, B) regex en PDF, C) Groq fallback.
+    Retorna 'YYYY-MM-DD' o None.
+    """
+    desc = act.get('descripcion', '') or ''
+    act_fecha = act.get('fecha', '') or ''
+
+    # A. Regex en descripción
+    m = re.search(r'\b(\d{2}/\d{2}/\d{4})\b', desc)
+    if m:
+        partes = m.group(1).split('/')
+        return f'{partes[2]}-{partes[1]}-{partes[0]}'
+
+    # B. Regex en texto del PDF
+    texto_pdf = ''
+    pdf_href = act.get('pdf_href')
+    if pdf_href:
+        try:
+            import tempfile
+            dest = os.path.join(tempfile.gettempdir(), 'jura_temp.pdf')
+            ok = descargar_pdf(pdf_href, cookies, headers, dest)
+            if ok:
+                texto_pdf = extraer_texto_pdf(dest)
+                if texto_pdf.startswith('[ERROR'):
+                    texto_pdf = ''
+        except Exception:
+            texto_pdf = ''
+
+        if texto_pdf:
+            # Patrón 1: "el día 16 de abril de 2025"
+            m1 = re.search(r'el\s+d[ií]a\s+(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})', texto_pdf, re.I)
+            if m1:
+                fecha = _parsear_fecha_texto(m1, act_fecha)
+                if fecha:
+                    return fecha
+            # Patrón 2: "el viernes 27 de febrero de 2026"
+            m2 = re.search(r'\b(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})\b', texto_pdf, re.I)
+            if m2:
+                fecha = _parsear_fecha_texto(m2, act_fecha)
+                if fecha:
+                    return fecha
+            # Patrón 3: fecha numérica DD/MM/YYYY
+            m3 = re.search(r'\b(\d{2}/\d{2}/\d{4})\b', texto_pdf)
+            if m3:
+                partes = m3.group(1).split('/')
+                return f'{partes[2]}-{partes[1]}-{partes[0]}'
+
+    # C. Groq fallback
+    if not _GROQ_AVAILABLE:
+        return None
+    texto_groq = texto_pdf if texto_pdf else desc
+    if not texto_groq or not texto_groq.strip():
+        return None
+    try:
+        with _GROQ_SEM:
+            global _GROQ_LAST
+            with _GROQ_LOCK:
+                elapsed = time.time() - _GROQ_LAST
+                if elapsed < 1.5:
+                    time.sleep(1.5 - elapsed)
+            prompt = (
+                "Del siguiente texto de un despacho judicial argentino, extraé la fecha "
+                "en que el interesado debe concurrir a prestar juramento de ciudadanía.\n"
+                "Respondé únicamente con la fecha en formato DD/MM/YYYY.\n"
+                f"Si no hay fecha, respondé 'no encontrada'.\n\n{texto_groq}"
+            )
+            resp = _GROQ_CLIENT.chat.completions.create(
+                model='llama-3.1-8b-instant',
+                messages=[{'role': 'user', 'content': prompt}],
+                max_tokens=20,
+                temperature=0,
+            )
+            with _GROQ_LOCK:
+                _GROQ_LAST = time.time()
+            respuesta = resp.choices[0].message.content.strip()
+        m = re.search(r'\b(\d{2}/\d{2}/\d{4})\b', respuesta)
+        if m:
+            partes = m.group(1).split('/')
+            return f'{partes[2]}-{partes[1]}-{partes[0]}'
+    except Exception as e:
+        print(f'    [JURA] Error Groq: {e}')
+    return None
+
+
+def detectar_jura(actuaciones_text, cookies, headers):
+    """
+    Analiza las actuaciones de un caso de ciudadanía para detectar:
+    - fechaJura: fecha asignada para el juramento ('YYYY-MM-DD' o None)
+    - juraCompletada: True si el interesado ya juró
+
+    Pasos:
+      1. Detectar FIRMA DESPACHO con keyword de jura → actuación elegida
+      2. Extraer fecha del turno (regex descripción → regex PDF → Groq)
+      3. Detectar actuaciones de confirmación de jura completada
+    """
+    fecha_jura = None
+    jura_completada = False
+    step1_act = None
+
+    # ── Paso 1: detectar turno asignado ───────────────────────────────────────
+    filtradas = []
+    for act in actuaciones_text:
+        if act.get('tipo', '').upper().strip() != 'FIRMA DESPACHO':
+            continue
+        desc_up = act.get('descripcion', '').upper()
+        # Caso especial J04-S07
+        if 'RECTIFICACION' in desc_up and 'JURA' in desc_up:
+            filtradas.append(act)
+            continue
+        if any(kw in desc_up for kw in _JURA_KEYWORDS):
+            filtradas.append(act)
+
+    if filtradas:
+        step1_act = max(filtradas, key=lambda a: datetime.strptime(a['fecha'], '%d/%m/%Y') if a.get('fecha') else datetime.min)
+
+        # ── Paso 2: extraer fecha ──────────────────────────────────────────────
+        fecha_jura = _extraer_fecha_jura(step1_act, cookies, headers)
+
+    # ── Paso 3: detectar jura completada ──────────────────────────────────────
+    hoy = datetime.today().date()
+    for act in actuaciones_text:
+        desc_up = act.get('descripcion', '').upper()
+
+        # Caso especial J02-S03
+        if (act.get('tipo', '').upper() == 'ESCRITO AGREGADO'
+                and act.get('descripcion', '').strip().lower() == 'jura'):
+            jura_completada = True
+            break
+
+        if not any(kw in desc_up for kw in _JURA_COMPLETADA_KEYWORDS):
+            continue
+
+        # Regla de desambiguación
+        if (step1_act
+                and act.get('fecha') == step1_act.get('fecha')
+                and act.get('descripcion') == step1_act.get('descripcion')):
+            # Es la misma actuación elegida en Step 1
+            if fecha_jura:
+                try:
+                    fj_date = datetime.strptime(fecha_jura, '%Y-%m-%d').date()
+                    if fj_date <= hoy:
+                        jura_completada = True
+                except ValueError:
+                    pass
+        else:
+            # Actuación distinta → confirmación directa
+            jura_completada = True
+
+        if jura_completada:
+            break
+
+    return {'fechaJura': fecha_jura, 'juraCompletada': jura_completada}
+
 # ── Extracción de actuaciones ─────────────────────────────────────────────────
 
 def get_actuaciones_cit(driver):
