@@ -965,6 +965,16 @@ def process_case(driver, case, ocr, cases, telegram_data):
         _update_last_check(case['id'])
         return driver
 
+    # Detectar fecha de jura
+    cookies = {c['name']: c['value'] for c in driver.get_cookies()}
+    headers = {'User-Agent': driver.execute_script("return navigator.userAgent")}
+    jura = detectar_jura(actuaciones, cookies, headers)
+    fecha_jura_anterior = case.get('fechaJura')
+    if jura['fechaJura']:
+        print(f"    [JURA] Fecha detectada: {jura['fechaJura']}")
+    if jura['juraCompletada']:
+        print(f"    [JURA] Jura completada")
+
     # Keyword detection
     keyword_stages = detect_stages_by_keyword(actuaciones)
     if keyword_stages:
@@ -1006,6 +1016,10 @@ def process_case(driver, case, ocr, cases, telegram_data):
                 all_cases[idx]['stages']        = final_stages
                 all_cases[idx]['lastActionDate'] = pjn_last_date
                 all_cases[idx]['lastPjnCheck']   = datetime.now().isoformat()
+                if jura['fechaJura']:
+                    all_cases[idx]['fechaJura'] = jura['fechaJura']
+                if jura['juraCompletada']:
+                    all_cases[idx]['juraCompletada'] = True
                 if groq_result and groq_result.get('requires_action'):
                     all_cases[idx]['nextAction'] = groq_result.get('action_note', '')
                 elif not groq_result:
@@ -1035,6 +1049,12 @@ def process_case(driver, case, ocr, cases, telegram_data):
     if carta_nueva:
         add_notification(case, 'citizenship_update', f"Carta de ciudadanía lista — {client_name}")
         print(f"    [NOTIF] Carta de ciudadanía")
+
+    if jura['fechaJura'] and jura['fechaJura'] != fecha_jura_anterior:
+        fj = jura['fechaJura']
+        fecha_fmt = f"{fj[8:10]}/{fj[5:7]}/{fj[:4]}"
+        add_notification(case, 'jura_asignada', f"Jura asignada — {client_name}: {fecha_fmt}")
+        print(f"    [NOTIF] Jura asignada: {fecha_fmt}")
 
     return driver
 
