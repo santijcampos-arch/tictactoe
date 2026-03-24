@@ -1,0 +1,81 @@
+{
+  "J08-S15": {
+    "nombre": "Juzgado 8 - Secretaría 15",
+    "casos_analizados": 12,
+    "casos_con_resultado": 12,
+    "generado_en": "2026-03-24T00:00:00",
+    "nota": "Análisis manual de 12 expedientes terminados con historial completo de actuaciones.",
+    "patrones_50pct": {
+      "etapas_frecuentes": [
+        "interpol",
+        "convenio_pfa",
+        "dnm",
+        "reincidencia",
+        "edictos",
+        "renaper",
+        "side",
+        "dictamen",
+        "jura"
+      ],
+      "actuaciones_inusuales_frecuentes": [
+        "SIDE (75% de los casos)",
+        "MDV actualizados antes del pase al fiscal (67% de los casos)",
+        "Eximición del Convenio PFA por falta de respuesta (42% de los casos)"
+      ],
+      "n_casos": 12
+    },
+    "particularidades": [
+      "Libra oficio SIDE en el 75% de los casos (9/12), en etapa avanzada — después de edictos y renaper, cerca del pase al fiscal",
+      "Pide MDV actualizados + antecedentes antes del pase al MPF, varios meses después de la presentación inicial (segunda ronda de MDV)",
+      "El Convenio PFA tarda 6-12 meses en responder — es normal. El juzgado acepta solicitud de eximición (CONVENIO INNECESARIO) cuando no contesta por más de un año",
+      "Acepta inicio sin DNI argentino, solo con pasaporte del país de origen (INICIO SIN DNI / CON PASAPORTE)",
+      "Los oficios a Interpol, Convenio PFA, DNM y Reincidencia se libran todos juntos en la misma jornada, junto con los edictos",
+      "Antes del pase al fiscal, suele pedir explícitamente: cert. contable actualizado + facturas + libre deuda ARCA + antecedentes actualizados del país de origen"
+    ],
+    "secuencia_tipica": [
+      "demanda_documental",
+      "mdv_iniciales",
+      "oficios_simultaneos (interpol + convenio_pfa + dnm + reincidencia + camara_electoral)",
+      "edictos",
+      "renaper",
+      "mdv_actualizados_y_antecedentes",
+      "vista_mpf",
+      "dictamen_fiscal",
+      "side (75% de los casos)",
+      "sentencia_interlocutorio",
+      "jura",
+      "carta_ciudadania"
+    ],
+    "alertas_proactivas": [
+      {
+        "condicion": {
+          "etapa_presente": "renaper",
+          "etapa_ausente": "side"
+        },
+        "mensaje": "J08-S15 libra oficio SIDE en el 75% de los casos — si el expediente lleva más de 6 meses desde los edictos y no hay SIDE, verificar con el juzgado si va a solicitarlo"
+      }
+    ],
+    "alertas_reactivas": [
+      {
+        "keywords": ["OFICIO A LA SIDE", "OFICIO SIDE", "LIBRESE OFICIO A LA SIDE", "LIBRESE OFICIO SIDE", "SE LIBRE OFICIO SIDE", "SE LIBRE OFICIO A LA SIDE"],
+        "mensaje": "J08-S15 libró oficio SIDE — informar al cliente. Si tiene antecedentes en país de origen, coordinar documentación preventivamente"
+      },
+      {
+        "keywords": ["ACREDITE MDV ACTUALIZADOS", "MDV ACTUALIZADOS", "ACTUALIZA MDV", "MEDIOS DE VIDA ACTUALIZADOS", "ACREDITE MEDIOS DE VIDA ACTUALIZADOS"],
+        "mensaje": "J08-S15 pide MDV actualizados antes del pase al fiscal — presentar: certificado contable actualizado + últimas facturas + libre deuda ARCA/AFIP + antecedentes penales actualizados del país de origen"
+      },
+      {
+        "keywords": ["CONTESTACION OFICIO - SIDE", "CONTESTACION - SIDE", "AGREGUESE CONTESTACION DE OFICIO - SIDE", "AGREGUESE CONTESTACION - SIDE"],
+        "mensaje": "SIDE respondió — el juzgado incorporó el informe. Verificar si hay alguna novedad que requiera acción"
+      },
+      {
+        "keywords": ["CONVENIO INNECESARIO"],
+        "mensaje": "J08-S15 eximió del Convenio PFA — no hace falta más reiteratorios, el proceso continúa sin esa respuesta"
+      },
+      {
+        "keywords": ["TIENESE PRESENTE PARA SU OPORTUNIDAD"],
+        "mensaje": "J08-S15 guardó el pedido de fecha de jura pero no la fijó aún — esperar dictamen fiscal y volver a presentar escrito solicitando fecha de jura"
+      }
+    ]
+  }
+}
