@@ -961,10 +961,11 @@ def detectar_alertas_conocimiento(case, actuaciones, conocimiento, stages):
     def es_nueva(act):
         if not last_date:
             return True
-        # Comparación lexicográfica DD/MM/YYYY. Funciona correctamente dentro del mismo
-        # mes/año pero puede ser incorrecta entre meses distintos (ej: "15/12/2024" >
-        # "01/03/2024" → True correcto, pero "05/01/2025" > "20/12/2024" → False incorrecto).
-        # Acepta el error: prefiere sobre-alertar antes que perder alertas.
+        # Comparación lexicográfica DD/MM/YYYY. Compara el par de dígitos de izquierda a
+        # derecha: falla cuando se cruza el año o el mes (ej: "05/01/2025" > "20/12/2024"
+        # compara "05" > "20" → False, siendo incorrecto — la de enero 2025 es posterior).
+        # Acepta el error: prefiere perder alertas reactivas en el cruce de año/mes
+        # antes que agregar una conversión de fecha completa en esta función.
         return act.get('fecha', '') > last_date
 
     nuevas = [a for a in actuaciones if es_nueva(a)]
@@ -1157,8 +1158,25 @@ def process_case(driver, case, ocr, cases, telegram_data):
         add_notification(case, 'jura_asignada', f"Jura asignada — {client_name}: {fecha_fmt}")
         print(f"    [NOTIF] Jura asignada: {fecha_fmt}")
 
+    # Deduplicar conocimiento_alert: no repetir si ya existe una con el mismo
+    # caseNumber + message generada hoy (las alertas proactivas se cumplen durante
+    # días o semanas y el script corre 3 veces/día).
+    hoy_prefix = datetime.now().strftime('%Y%m%d')
+    with _NOTIF_LOCK:
+        try:
+            notifs_actuales = json.load(open(NOTIF_FILE, encoding='utf-8')) if os.path.exists(NOTIF_FILE) else []
+        except Exception:
+            notifs_actuales = []
+    notifs_kb_hoy = {
+        n['message']
+        for n in notifs_actuales
+        if n.get('type') == 'conocimiento_alert'
+        and n.get('caseNumber') == case.get('caseNumber')
+        and n.get('id', '').startswith(hoy_prefix)
+    }
     for msg in alertas_kb:
-        add_notification(case, 'conocimiento_alert', msg)
+        if msg not in notifs_kb_hoy:
+            add_notification(case, 'conocimiento_alert', msg)
 
     return driver
 
