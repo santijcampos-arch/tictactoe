@@ -416,6 +416,7 @@ def _extraer_fecha_jura(act, cookies, headers):
     Orden: A) regex en descripción, B) regex en PDF, C) Groq fallback.
     Retorna 'YYYY-MM-DD' o None.
     """
+    global _GROQ_LAST
     desc = act.get('descripcion', '') or ''
     act_fecha = act.get('fecha', '') or ''
 
@@ -461,7 +462,6 @@ def _extraer_fecha_jura(act, cookies, headers):
                 return f'{partes[2]}-{partes[1]}-{partes[0]}'
 
     # C. Groq fallback
-    global _GROQ_LAST
     if not _GROQ_AVAILABLE:
         return None
     texto_groq = texto_pdf if texto_pdf else desc
