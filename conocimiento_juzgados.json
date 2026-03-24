@@ -1,36 +1,214 @@
 {
+  "nota_general": "Análisis manual de 112 expedientes terminados con historial completo de actuaciones (100-160 acts/caso). Análisis propio sin LLM.",
+
+  "J01-S01": {
+    "nombre": "Juzgado 1 - Secretaría 1",
+    "casos_analizados": 6,
+    "particularidades": [
+      "Libra Reincidencia e Índice Legal como oficios separados (además de Interpol, Convenio, DNM)",
+      "Pide copia completa de pasaporte al inicio si no se acompañó",
+      "No pide SIDE"
+    ],
+    "secuencia_tipica": ["demanda", "mdv_iniciales", "oficios (interpol + convenio_pfa + dnm + reincidencia + indice_legal + camara_electoral)", "edictos", "renaper", "pase_al_fiscal", "dictamen", "sentencia", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["INDICE LEGAL"],
+        "mensaje": "J01-S01 libró oficio a Índice Legal — aguardar respuesta antes del pase al fiscal"
+      }
+    ]
+  },
+
+  "J01-S02": {
+    "nombre": "Juzgado 1 - Secretaría 2",
+    "casos_analizados": 6,
+    "particularidades": [
+      "Pide MDV actualizados antes del pase al fiscal (5/6 casos)",
+      "No pide SIDE",
+      "Usa Convenio PFA"
+    ],
+    "secuencia_tipica": ["demanda", "mdv_iniciales", "oficios (interpol + convenio_pfa + dnm + reincidencia)", "edictos", "renaper", "mdv_actualizados", "pase_al_fiscal", "dictamen", "sentencia", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["ACREDITE MDV ACTUALIZADOS", "MDV ACTUALIZADOS", "ACTUALIZA MDV", "MEDIOS DE VIDA ACTUALIZADOS"],
+        "mensaje": "J01-S02 pide MDV actualizados antes del pase al fiscal — presentar cert. contable actualizado + facturas + libre deuda ARCA"
+      }
+    ]
+  },
+
+  "J02-S03": {
+    "nombre": "Juzgado 2 - Secretaría 3",
+    "casos_analizados": 1,
+    "particularidades": [
+      "Muestra pocos datos (1 caso) — análisis preliminar",
+      "Usa Interpol, DNM, Renaper",
+      "No usa Convenio PFA ni SIDE"
+    ],
+    "secuencia_tipica": ["demanda", "mdv_iniciales", "oficios (interpol + dnm + reincidencia)", "edictos", "renaper", "pase_al_fiscal", "dictamen", "sentencia", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J02-S04": {
+    "nombre": "Juzgado 2 - Secretaría 4",
+    "casos_analizados": 2,
+    "particularidades": [
+      "Muestra pocos datos (2 casos) — análisis preliminar",
+      "Usa Interpol, Convenio PFA, DNM, Renaper",
+      "No pide SIDE"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + convenio_pfa + dnm)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J03-S05": {
+    "nombre": "Juzgado 3 - Secretaría 5",
+    "casos_analizados": 3,
+    "particularidades": [
+      "NO usa Convenio PFA — no libra ese oficio",
+      "No pide SIDE",
+      "Usa Interpol, DNM, Reincidencia, Renaper"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J03-S06": {
+    "nombre": "Juzgado 3 - Secretaría 6",
+    "casos_analizados": 2,
+    "particularidades": [
+      "NO usa Convenio PFA",
+      "No pide SIDE",
+      "Usa Interpol, DNM, Reincidencia, Renaper"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J04-S07": {
+    "nombre": "Juzgado 4 - Secretaría 7",
+    "casos_analizados": 6,
+    "particularidades": [
+      "Usa Convenio PFA, Interpol, DNM, Reincidencia, Renaper",
+      "No pide SIDE",
+      "MDV actualizados en algunos casos (2/6)"
+    ],
+    "secuencia_tipica": ["demanda", "mdv_iniciales", "oficios (interpol + convenio_pfa + dnm + reincidencia)", "edictos", "renaper", "pase_al_fiscal", "dictamen", "sentencia", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J04-S08": {
+    "nombre": "Juzgado 4 - Secretaría 8",
+    "casos_analizados": 2,
+    "particularidades": [
+      "Muestra pocos datos (2 casos) — análisis preliminar",
+      "Usa Convenio PFA, Interpol, DNM",
+      "No pide SIDE"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + convenio_pfa + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J05-S09": {
+    "nombre": "Juzgado 5 - Secretaría 9",
+    "casos_analizados": 2,
+    "particularidades": [
+      "Muestra pocos datos (2 casos) — análisis preliminar",
+      "Usa Interpol, Convenio PFA (1/2), DNM, Reincidencia, Renaper",
+      "No pide SIDE"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J06-S11": {
+    "nombre": "Juzgado 6 - Secretaría 11",
+    "casos_analizados": 6,
+    "particularidades": [
+      "Usa ETAPAS NUMERADAS en cada despacho: ETAPA 3 OFICIOS, ETAPA 4 MDV Y ANTECEDENTES, ETAPA 5 EDICTO, ETAPA 6 PASE AL FISCAL — muy fácil de trackear el estado del expediente",
+      "NO usa Convenio PFA — libra solo Interpol, DNM y Cámara Electoral",
+      "Las respuestas de Interpol, Renaper y Reincidencia llegan como ESCRITO INCORPORADO (no DEO)",
+      "Pide antecedentes del país de origen como requisito antes del pase al fiscal",
+      "No pide SIDE",
+      "Post-jura manda DEOs a Ministerio de Interior + DNM + Cámara Electoral"
+    ],
+    "secuencia_tipica": [
+      "demanda",
+      "ETAPA 3: oficios (interpol + dnm + camara_electoral)",
+      "ETAPA 4: mdv + antecedentes pais de origen",
+      "ETAPA 5: edicto",
+      "ETAPA 6: pase_al_fiscal",
+      "dictamen",
+      "sentencia",
+      "jura"
+    ],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["ETAPA 3", "ETAPA 4", "ETAPA 5", "ETAPA 6"],
+        "mensaje": "J06-S11 usa etapas numeradas — verificar en qué etapa está el expediente para anticipar el próximo paso"
+      },
+      {
+        "keywords": ["ETAPA 4 - MEDIOS DE VIDA", "ETAPA 4 -"],
+        "mensaje": "J06-S11 está en Etapa 4 — hay que presentar MDV actualizados + antecedentes penales del país de origen antes del pase al fiscal"
+      }
+    ]
+  },
+
+  "J06-S12": {
+    "nombre": "Juzgado 6 - Secretaría 12",
+    "casos_analizados": 4,
+    "particularidades": [
+      "NO usa Convenio PFA",
+      "No pide SIDE",
+      "Usa Interpol, DNM, Reincidencia, Renaper"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J07-S13": {
+    "nombre": "Juzgado 7 - Secretaría 13",
+    "casos_analizados": 5,
+    "particularidades": [
+      "Usa Convenio PFA, Interpol, DNM, Reincidencia",
+      "No pide SIDE",
+      "MDV actualizados en algunos casos (2/5)"
+    ],
+    "secuencia_tipica": ["demanda", "mdv_iniciales", "oficios (interpol + convenio_pfa + dnm + reincidencia)", "edictos", "renaper", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J07-S14": {
+    "nombre": "Juzgado 7 - Secretaría 14",
+    "casos_analizados": 1,
+    "particularidades": [
+      "Muestra pocos datos (1 caso) — análisis preliminar",
+      "Usa Convenio PFA, Interpol, DNM, Reincidencia, Renaper"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + convenio_pfa + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
   "J08-S15": {
     "nombre": "Juzgado 8 - Secretaría 15",
     "casos_analizados": 12,
-    "casos_con_resultado": 12,
-    "generado_en": "2026-03-24T00:00:00",
-    "nota": "Análisis manual de 12 expedientes terminados con historial completo de actuaciones.",
-    "patrones_50pct": {
-      "etapas_frecuentes": [
-        "interpol",
-        "convenio_pfa",
-        "dnm",
-        "reincidencia",
-        "edictos",
-        "renaper",
-        "side",
-        "dictamen",
-        "jura"
-      ],
-      "actuaciones_inusuales_frecuentes": [
-        "SIDE (75% de los casos)",
-        "MDV actualizados antes del pase al fiscal (67% de los casos)",
-        "Eximición del Convenio PFA por falta de respuesta (42% de los casos)"
-      ],
-      "n_casos": 12
-    },
     "particularidades": [
       "Libra oficio SIDE en el 75% de los casos (9/12), en etapa avanzada — después de edictos y renaper, cerca del pase al fiscal",
       "Pide MDV actualizados + antecedentes antes del pase al MPF, varios meses después de la presentación inicial (segunda ronda de MDV)",
       "El Convenio PFA tarda 6-12 meses en responder — es normal. El juzgado acepta solicitud de eximición (CONVENIO INNECESARIO) cuando no contesta por más de un año",
       "Acepta inicio sin DNI argentino, solo con pasaporte del país de origen (INICIO SIN DNI / CON PASAPORTE)",
-      "Los oficios a Interpol, Convenio PFA, DNM y Reincidencia se libran todos juntos en la misma jornada, junto con los edictos",
-      "Antes del pase al fiscal, suele pedir explícitamente: cert. contable actualizado + facturas + libre deuda ARCA + antecedentes actualizados del país de origen"
+      "Los oficios a Interpol, Convenio PFA, DNM y Reincidencia se libran todos juntos en la misma jornada"
     ],
     "secuencia_tipica": [
       "demanda_documental",
@@ -48,11 +226,8 @@
     ],
     "alertas_proactivas": [
       {
-        "condicion": {
-          "etapa_presente": "renaper",
-          "etapa_ausente": "side"
-        },
-        "mensaje": "J08-S15 libra oficio SIDE en el 75% de los casos — si el expediente lleva más de 6 meses desde los edictos y no hay SIDE, verificar con el juzgado si va a solicitarlo"
+        "condicion": {"etapa_presente": "renaper", "etapa_ausente": "side"},
+        "mensaje": "J08-S15 libra oficio SIDE en el 75% de los casos — si el expediente lleva más de 6 meses desde los edictos y no hay SIDE, verificar con el juzgado"
       }
     ],
     "alertas_reactivas": [
@@ -62,7 +237,7 @@
       },
       {
         "keywords": ["ACREDITE MDV ACTUALIZADOS", "MDV ACTUALIZADOS", "ACTUALIZA MDV", "MEDIOS DE VIDA ACTUALIZADOS", "ACREDITE MEDIOS DE VIDA ACTUALIZADOS"],
-        "mensaje": "J08-S15 pide MDV actualizados antes del pase al fiscal — presentar: certificado contable actualizado + últimas facturas + libre deuda ARCA/AFIP + antecedentes penales actualizados del país de origen"
+        "mensaje": "J08-S15 pide MDV actualizados antes del pase al fiscal — presentar: cert. contable actualizado + facturas + libre deuda ARCA/AFIP + antecedentes penales actualizados del país de origen"
       },
       {
         "keywords": ["CONTESTACION OFICIO - SIDE", "CONTESTACION - SIDE", "AGREGUESE CONTESTACION DE OFICIO - SIDE", "AGREGUESE CONTESTACION - SIDE"],
@@ -75,6 +250,219 @@
       {
         "keywords": ["TIENESE PRESENTE PARA SU OPORTUNIDAD"],
         "mensaje": "J08-S15 guardó el pedido de fecha de jura pero no la fijó aún — esperar dictamen fiscal y volver a presentar escrito solicitando fecha de jura"
+      }
+    ]
+  },
+
+  "J08-S16": {
+    "nombre": "Juzgado 8 - Secretaría 16",
+    "casos_analizados": 7,
+    "particularidades": [
+      "Pide SIDE en 2/7 casos (29%) — menos frecuente que S15 pero existe",
+      "Acepta inicio sin DNI (5/7 casos = 71%) — más frecuente que S15, parece ser la norma en esta secretaría",
+      "Pide MDV actualizados (5/7 casos)",
+      "Usa Convenio PFA",
+      "Comportamiento similar a S15 pero con menos SIDE"
+    ],
+    "secuencia_tipica": [
+      "demanda (frecuentemente sin DNI, solo pasaporte)",
+      "mdv_iniciales",
+      "oficios (interpol + convenio_pfa + dnm + reincidencia)",
+      "edictos",
+      "renaper",
+      "mdv_actualizados",
+      "pase_al_fiscal",
+      "dictamen",
+      "sentencia",
+      "jura"
+    ],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["ACREDITE MDV ACTUALIZADOS", "MDV ACTUALIZADOS", "ACTUALIZA MDV", "MEDIOS DE VIDA ACTUALIZADOS"],
+        "mensaje": "J08-S16 pide MDV actualizados — presentar cert. contable actualizado + facturas + libre deuda ARCA + antecedentes del país de origen"
+      },
+      {
+        "keywords": ["CONVENIO INNECESARIO"],
+        "mensaje": "J08-S16 eximió del Convenio PFA — continuar sin esa respuesta"
+      }
+    ]
+  },
+
+  "J09-S17": {
+    "nombre": "Juzgado 9 - Secretaría 17",
+    "casos_analizados": 7,
+    "particularidades": [
+      "El juzgado advierte explícitamente: 'CONVENIO ESPERAMOS 5 MESES PARA REITERAR, LO CONTRARIO ESTAMOS EXPUESTOS A SER BANEADOS' — NO reiterar Convenio antes de 5 meses o el juzgado puede bloquear al estudio",
+      "Usa Gaceta de Paz para los edictos — NO Bolsa de Comercio",
+      "Pide MDV actualizados en 6/7 casos (86%) — casi siempre",
+      "No pide SIDE",
+      "Pase físico al fiscal"
+    ],
+    "secuencia_tipica": [
+      "demanda",
+      "mdv_iniciales",
+      "oficios (interpol + convenio_pfa + dnm + reincidencia)",
+      "renaper",
+      "edictos (Gaceta de Paz)",
+      "mdv_actualizados + antecedentes_pais_origen",
+      "pase_al_fiscal",
+      "dictamen",
+      "sentencia",
+      "jura"
+    ],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["ACREDITE MDV ACTUALIZADOS", "MDV ACTUALIZADOS", "ACTUALIZA MDV", "MEDIOS DE VIDA ACTUALIZADOS", "ACTUALIZA CBC Y MDV"],
+        "mensaje": "J09-S17 pide MDV actualizados + antecedentes del país de origen — presentar todo junto para el pase al fiscal"
+      },
+      {
+        "keywords": ["GACETA DE PAZ", "GACETA"],
+        "mensaje": "J09-S17 usa Gaceta de Paz para edictos — asegurarse de publicar ahí, no en Bolsa de Comercio"
+      }
+    ]
+  },
+
+  "J09-S18": {
+    "nombre": "Juzgado 9 - Secretaría 18",
+    "casos_analizados": 3,
+    "particularidades": [
+      "Usa Convenio PFA, Interpol, DNM, Reincidencia, Renaper",
+      "MDV actualizados en 2/3 casos",
+      "No pide SIDE",
+      "Comportamiento similar a J09-S17 pero sin la regla de los 5 meses documentada"
+    ],
+    "secuencia_tipica": ["demanda", "mdv_iniciales", "oficios (interpol + convenio_pfa + dnm + reincidencia)", "renaper", "edictos", "mdv_actualizados", "pase_al_fiscal", "dictamen", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["ACREDITE MDV ACTUALIZADOS", "MDV ACTUALIZADOS", "ACTUALIZA MDV"],
+        "mensaje": "J09-S18 pide MDV actualizados — presentar cert. contable + facturas + libre deuda ARCA antes del pase al fiscal"
+      }
+    ]
+  },
+
+  "J10-S19": {
+    "nombre": "Juzgado 10 - Secretaría 19",
+    "casos_analizados": 12,
+    "particularidades": [
+      "NO usa Convenio PFA — proceso completamente diferente a los J08",
+      "Las respuestas de Interpol, Renaper y Reincidencia llegan como ESCRITO INCORPORADO (no DEO) — responden rápido",
+      "Usa Dactiloscopia PFA (División Dactiloscopia, no División Convenio)",
+      "Requiere presencia física del cliente: 'NOTA COMPARECENCIA QUE SE ENCUENTRA EN EL PAIS' — verificar que el cliente está en Argentina",
+      "El juez puede pedir exhibir documentación original para certificación: 'EXHIBA ORIGINALES PARA SU CERTIFICACION'",
+      "No pide SIDE",
+      "Post-sentencia: DEOs a Cámara Electoral + DNM"
+    ],
+    "secuencia_tipica": [
+      "demanda",
+      "oficios (interpol + dnm + dactiloscopia_pfa + camara_electoral)",
+      "respuestas como ESCRITO INCORPORADO (interpol + renaper + reincidencia + dactiloscopia)",
+      "edictos",
+      "mdv + antecedentes_pais_origen",
+      "pase_al_fiscal (físico)",
+      "dictamen",
+      "comparecencia_cliente",
+      "sentencia",
+      "jura"
+    ],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["NOTA COMPARECENCIA", "COMPARECENCIA QUE SE ENCUENTRA EN EL PAIS", "ENCUENTRE EN EL PAIS"],
+        "mensaje": "J10-S19 requiere que el cliente acredite que está en Argentina — coordinar comparecencia o documentación de presencia en el país"
+      },
+      {
+        "keywords": ["EXHIBA ORIGINALES", "EXHIBA ORIGINAL", "EXHIBICION DOCUMENTACION ORIGINAL"],
+        "mensaje": "J10-S19 pide exhibir originales para certificación — coordinar visita al juzgado con toda la documentación original del cliente"
+      }
+    ]
+  },
+
+  "J10-S20": {
+    "nombre": "Juzgado 10 - Secretaría 20",
+    "casos_analizados": 16,
+    "particularidades": [
+      "NO usa Convenio PFA",
+      "Las respuestas de Interpol, Renaper y Reincidencia llegan como ESCRITO INCORPORADO — responden rápido",
+      "Usa Dactiloscopia PFA",
+      "Requiere presencia física del cliente ('NOTA COMPARECENCIA QUE SE ENCUENTRA EN EL PAIS')",
+      "El juez puede pedir exhibir documentación original: 'EXHIBA ORIGINALES PARA SU CERTIFICACION'",
+      "No pide SIDE",
+      "Sentencia directa sin interlocutorio publicado — 'SENTENCIA CIUDADANIA' como firma despacho",
+      "Puede incluir mención de hijo argentino en la sentencia ('CON HIJO ARG')"
+    ],
+    "secuencia_tipica": [
+      "demanda",
+      "oficios (dactiloscopia_pfa + dnm + camara_electoral)",
+      "respuestas como ESCRITO INCORPORADO (reincidencia + interpol + renaper + dactiloscopia)",
+      "edictos",
+      "mdv",
+      "pase_al_fiscal (físico)",
+      "dictamen",
+      "comparecencia_cliente + exhibicion_originales",
+      "sentencia",
+      "jura"
+    ],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["NOTA COMPARECENCIA", "COMPARECENCIA QUE SE ENCUENTRA EN EL PAIS"],
+        "mensaje": "J10-S20 requiere que el cliente acredite presencia en Argentina — coordinar comparecencia o documentación"
+      },
+      {
+        "keywords": ["EXHIBA ORIGINALES", "EXHIBA ORIGINAL", "EXHIBICION DOCUMENTACION ORIGINAL"],
+        "mensaje": "J10-S20 pide exhibir originales para certificación — coordinar visita al juzgado con toda la documentación original del cliente"
+      },
+      {
+        "keywords": ["ACTUALIZAR ANTECEDENTES", "ACTUALICE ANTECEDENTES"],
+        "mensaje": "J10-S20 pide antecedentes actualizados del país de origen — coordinar con el cliente"
+      }
+    ]
+  },
+
+  "J11-S21": {
+    "nombre": "Juzgado 11 - Secretaría 21",
+    "casos_analizados": 4,
+    "particularidades": [
+      "Usa Convenio PFA (1/4), Interpol, DNM, Reincidencia, Renaper",
+      "No pide SIDE",
+      "Sentencia publicada como interlocutorio en varios casos"
+    ],
+    "secuencia_tipica": ["demanda", "oficios (interpol + dnm + reincidencia)", "renaper", "edictos", "pase_al_fiscal", "dictamen", "sentencia", "jura"],
+    "alertas_proactivas": [],
+    "alertas_reactivas": []
+  },
+
+  "J11-S22": {
+    "nombre": "Juzgado 11 - Secretaría 22",
+    "casos_analizados": 5,
+    "particularidades": [
+      "Libra oficio al Registro Civil CABA (60000000070) — único entre todos los juzgados analizados",
+      "Respuestas de Interpol, Reincidencia y Renaper llegan como ESCRITO INCORPORADO (rápido)",
+      "Usa también Registro Nacional de Reincidencia (RNR) como oficio separado",
+      "No usa Convenio PFA (o muy raramente)",
+      "No pide SIDE",
+      "Sentencia directa como firma despacho",
+      "Post-jura: DEOs a DNM + Ministerio de Interior + Cámara Electoral"
+    ],
+    "secuencia_tipica": [
+      "demanda",
+      "oficios (interpol + dnm + registro_civil_caba + camara_electoral + rnr)",
+      "edictos",
+      "mdv",
+      "respuestas como ESCRITO INCORPORADO",
+      "pase_al_fiscal",
+      "dictamen",
+      "sentencia",
+      "jura"
+    ],
+    "alertas_proactivas": [],
+    "alertas_reactivas": [
+      {
+        "keywords": ["REGISTRO CIVIL CABA", "60000000070"],
+        "mensaje": "J11-S22 libró oficio al Registro Civil CABA — aguardar respuesta, es un oficio que usan solo algunos juzgados"
       }
     ]
   }
