@@ -451,7 +451,7 @@ def _extraer_fecha_jura(act, cookies, headers):
                     return fecha
             # Patrón 2: "el viernes 27 de febrero de 2026"
             m2 = re.search(r'\b(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})\b', texto_pdf, re.I)
-            if m2 and (_MESES.get(m2.group(2).lower()) is not None or m2.group(2).lower() == 'próximo'):
+            if m2:
                 fecha = _parsear_fecha_texto(m2, act_fecha)
                 if fecha:
                     return fecha
@@ -1037,6 +1037,9 @@ def process_case(driver, case, ocr, cases, telegram_data):
             return driver
         finally:
             _release_file_lock(_CASES_FILE_LOCK_PATH)
+
+    if idx is None:
+        return driver
 
     print(f"    OK {case_number} — stages: {sum(1 for v in final_stages.values() if v == 'OK')}/12 completas")
 
