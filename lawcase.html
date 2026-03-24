@@ -1465,6 +1465,31 @@
       color: var(--text-primary);
       line-height: 1.5;
     }
+  .cit-jura-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-left: 6px;
+  }
+  .cit-jura-pendiente {
+    background: rgba(184,151,90,0.13);
+    color: #b8975a;
+    border: 1px solid rgba(184,151,90,0.35);
+  }
+  .cit-jura-completada {
+    background: rgba(109,191,103,0.1);
+    color: #6dbf67;
+    border: 1px solid rgba(109,191,103,0.3);
+  }
+  .detail-jura-block {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
   </style>
 </head>
 <body>
@@ -1707,6 +1732,9 @@
           <div class="case-action-alert__label">Acción requerida</div>
           <div class="case-action-alert__text" id="detail-action-text"></div>
         </div>
+      </div>
+      <div id="detail-jura-block" style="display:none" class="detail-jura-block">
+        <span id="detail-jura-label"></span>
       </div>
       <div class="detail-grid">
         <div class="detail-field">
@@ -2774,13 +2802,13 @@
     let mainHTML = '';
     if (sinIniciar) {
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}</div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}${c.juraCompletada ? `<span class="cit-jura-badge cit-jura-completada">✓ juró${c.fechaJura ? ' ' + formatDate(c.fechaJura) : ''}</span>` : c.fechaJura ? `<span class="cit-jura-badge cit-jura-pendiente">${formatDate(c.fechaJura)}</span>` : ''}</div>
         <div class="cit-count"></div>
         <div class="cit-active-zone"><span class="cit-sin-iniciar">Sin iniciar</span></div>
         ${commentZone}`;
     } else if (closed) {
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}<span class="cit-carta-badge">✓</span></div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}<span class="cit-carta-badge">✓</span>${c.juraCompletada ? `<span class="cit-jura-badge cit-jura-completada">✓ juró${c.fechaJura ? ' ' + formatDate(c.fechaJura) : ''}</span>` : c.fechaJura ? `<span class="cit-jura-badge cit-jura-pendiente">${formatDate(c.fechaJura)}</span>` : ''}</div>
         <div class="cit-count"><span class="n">${completadas}</span>/12</div>
         <div class="cit-active-zone">
           <span style="font-size:0.65rem;color:var(--success)">Carta obtenida</span>
@@ -2789,7 +2817,7 @@
     } else if (currentKey === 'carta_ciudadania') {
       // Carta completada pero status aún no marcado como closed
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}</div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}${c.juraCompletada ? `<span class="cit-jura-badge cit-jura-completada">✓ juró${c.fechaJura ? ' ' + formatDate(c.fechaJura) : ''}</span>` : c.fechaJura ? `<span class="cit-jura-badge cit-jura-pendiente">${formatDate(c.fechaJura)}</span>` : ''}</div>
         <div class="cit-count"><span class="n">${completadas}</span>/12</div>
         <div class="cit-active-zone">
           <span class="cit-pill-active" style="color:var(--success);background:rgba(63,185,80,0.1);border-color:rgba(63,185,80,0.25)">Carta obtenida</span>
@@ -2798,7 +2826,7 @@
     } else {
       const exentoNote = hayExento ? `<span class="cit-exempt-note">conv. exento</span>` : '';
       mainHTML = `
-        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}</div>
+        <div class="cit-name">${c.clientName || '—'}${c.nextAction ? '<span class="cit-action-badge" title="Acción requerida">⚠</span>' : ''}${c.juraCompletada ? `<span class="cit-jura-badge cit-jura-completada">✓ juró${c.fechaJura ? ' ' + formatDate(c.fechaJura) : ''}</span>` : c.fechaJura ? `<span class="cit-jura-badge cit-jura-pendiente">${formatDate(c.fechaJura)}</span>` : ''}</div>
         <div class="cit-count"><span class="n">${completadas}</span>/12</div>
         <div class="cit-active-zone">
           ${currentLabel ? `<span class="cit-pill-active">${currentLabel}</span>` : ''}
@@ -3350,6 +3378,24 @@
     } else {
       actionAlert.style.display = 'none';
       actionText.textContent = '';
+    }
+
+    // Jura block (citizenship only)
+    const juraBlock = document.getElementById('detail-jura-block');
+    const juraLabel = document.getElementById('detail-jura-label');
+    if (c.juraCompletada || c.fechaJura) {
+      juraBlock.style.display = '';
+      juraBlock.className = 'detail-jura-block ' +
+        (c.juraCompletada ? 'cit-jura-completada' : 'cit-jura-pendiente');
+      if (c.juraCompletada) {
+        juraLabel.textContent = c.fechaJura
+          ? `✓ Juró el ${formatDate(c.fechaJura)}`
+          : '✓ Juró';
+      } else {
+        juraLabel.textContent = `Jura: ${formatDate(c.fechaJura)}`;
+      }
+    } else {
+      juraBlock.style.display = 'none';
     }
 
     // Tipo de acción + snippets button
