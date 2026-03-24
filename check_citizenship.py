@@ -437,7 +437,8 @@ def _extraer_fecha_jura(act, cookies, headers):
                 texto_pdf = extraer_texto_pdf(dest)
                 if texto_pdf.startswith('[ERROR'):
                     texto_pdf = ''
-        except Exception:
+        except Exception as e:
+            print(f'    [JURA PDF] Error descargando PDF: {e}')
             texto_pdf = ''
 
         if texto_pdf:
@@ -449,7 +450,7 @@ def _extraer_fecha_jura(act, cookies, headers):
                     return fecha
             # Patrón 2: "el viernes 27 de febrero de 2026"
             m2 = re.search(r'\b(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})\b', texto_pdf, re.I)
-            if m2:
+            if m2 and (_MESES.get(m2.group(2).lower()) is not None or m2.group(2).lower() == 'próximo'):
                 fecha = _parsear_fecha_texto(m2, act_fecha)
                 if fecha:
                     return fecha
@@ -460,6 +461,7 @@ def _extraer_fecha_jura(act, cookies, headers):
                 return f'{partes[2]}-{partes[1]}-{partes[0]}'
 
     # C. Groq fallback
+    global _GROQ_LAST
     if not _GROQ_AVAILABLE:
         return None
     texto_groq = texto_pdf if texto_pdf else desc
@@ -467,11 +469,12 @@ def _extraer_fecha_jura(act, cookies, headers):
         return None
     try:
         with _GROQ_SEM:
-            global _GROQ_LAST
             with _GROQ_LOCK:
-                elapsed = time.time() - _GROQ_LAST
-                if elapsed < 1.5:
-                    time.sleep(1.5 - elapsed)
+                ahora = time.time()
+                espera = 1.5 - (ahora - _GROQ_LAST)
+                if espera > 0:
+                    time.sleep(espera)
+                _GROQ_LAST = time.time()
             prompt = (
                 "Del siguiente texto de un despacho judicial argentino, extraé la fecha "
                 "en que el interesado debe concurrir a prestar juramento de ciudadanía.\n"
@@ -484,8 +487,6 @@ def _extraer_fecha_jura(act, cookies, headers):
                 max_tokens=20,
                 temperature=0,
             )
-            with _GROQ_LOCK:
-                _GROQ_LAST = time.time()
             respuesta = resp.choices[0].message.content.strip()
         m = re.search(r'\b(\d{2}/\d{2}/\d{4})\b', respuesta)
         if m:
@@ -525,7 +526,12 @@ def detectar_jura(actuaciones_text, cookies, headers):
             filtradas.append(act)
 
     if filtradas:
-        step1_act = max(filtradas, key=lambda a: datetime.strptime(a['fecha'], '%d/%m/%Y') if a.get('fecha') else datetime.min)
+        def _fecha_sort_key(a):
+            try:
+                return datetime.strptime(a.get('fecha', ''), '%d/%m/%Y')
+            except (ValueError, TypeError):
+                return datetime.min
+        step1_act = max(filtradas, key=_fecha_sort_key)
 
         # ── Paso 2: extraer fecha ──────────────────────────────────────────────
         fecha_jura = _extraer_fecha_jura(step1_act, cookies, headers)
