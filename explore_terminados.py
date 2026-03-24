@@ -187,7 +187,7 @@ def get_actuaciones_cit(driver):
                 break
 
         if tabla is None:
-            print("    [ACT] No se encontró tabla de actuaciones")
+            plog("    [ACT] No se encontró tabla de actuaciones")
             return actuaciones
 
         filas = tabla.find_all('tr')[1:]  # saltar encabezado
@@ -250,9 +250,9 @@ def get_actuaciones_cit(driver):
                     'pdf_href': act_pdf_href,
                 })
 
-        print(f"    [ACT] {len(actuaciones)} actuaciones extraídas")
+        plog(f"    [ACT] {len(actuaciones)} actuaciones extraídas")
     except Exception as e:
-        print(f"    [ACT] Error: {e}")
+        plog(f"    [ACT] Error: {e}")
 
     # Devolver de más antigua a más reciente (el PJN muestra más reciente primero)
     return list(reversed(actuaciones))
@@ -419,20 +419,22 @@ def run_worker(worker_id, casos):
             grupo_key = f'J{juz:02d}-S{sec:02d}'
 
             # Resume: saltar si ya está OK
+            ya_ok = False
             if os.path.exists(RAW_FILE):
                 try:
-                    with open(RAW_FILE, encoding='utf-8') as f:
-                        existing = json.load(f)
+                    with _RAW_LOCK:
+                        with open(RAW_FILE, encoding='utf-8') as f:
+                            existing = json.load(f)
                     grupo_data = existing.get(grupo_key, [])
                     ya_ok = any(
                         r['case_number'] == numero and r.get('error') is None
                         for r in grupo_data
                     )
-                    if ya_ok:
-                        plog(f'  [W{worker_id}] [{grupo_key} {numero}] ya scrapeado — saltando')
-                        continue
                 except Exception:
                     pass
+            if ya_ok:
+                plog(f'  [W{worker_id}] [{grupo_key} {numero}] ya scrapeado — saltando')
+                continue
 
             resultado, driver = scrape_caso(driver, ocr, juz, sec, numero)
             guardar_resultado(grupo_key, resultado)
