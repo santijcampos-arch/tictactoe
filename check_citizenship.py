@@ -30,6 +30,7 @@ FOLDER     = os.path.dirname(os.path.abspath(__file__))
 CASES_FILE = os.path.join(FOLDER, 'cases.json')
 NOTIF_FILE = os.path.join(FOLDER, 'notifications.json')
 TELEGRAM_FILE = os.path.join(FOLDER, 'telegram_ciudadania.json')
+CONOCIMIENTO_FILE = os.path.join(FOLDER, 'conocimiento_juzgados.json')
 PJN_URL    = 'https://scw.pjn.gov.ar/scw/home.seam'
 
 N_WORKERS           = 1   # UN Chrome a la vez
@@ -72,6 +73,28 @@ _NOTIF_LOCK          = threading.Lock()
 _GROQ_SEM  = threading.Semaphore(1)
 _GROQ_LAST = 0.0
 _GROQ_LOCK = threading.Lock()
+
+_conocimiento_cache = None
+
+def _cargar_conocimiento():
+    """
+    Carga conocimiento_juzgados.json una sola vez y lo cachea en módulo.
+    Retorna dict vacío si el archivo no existe (no crashea).
+    """
+    global _conocimiento_cache
+    if _conocimiento_cache is not None:
+        return _conocimiento_cache
+    if not os.path.exists(CONOCIMIENTO_FILE):
+        _conocimiento_cache = {}
+        return _conocimiento_cache
+    try:
+        with open(CONOCIMIENTO_FILE, encoding='utf-8') as f:
+            _conocimiento_cache = json.load(f)
+        print(f'  [KB] Conocimiento cargado: {list(_conocimiento_cache.keys())}')
+    except Exception as e:
+        print(f'  [KB] Error cargando conocimiento: {e}')
+        _conocimiento_cache = {}
+    return _conocimiento_cache
 
 AUTO  = '--auto'  in sys.argv
 LIMIT = None
@@ -892,6 +915,64 @@ Si "requires_action" es true, "action_note" debe ser específico: qué se pide, 
             return None
 
 
+# ── Knowledge base alerts ──────────────────────────────────────────────────────
+
+def detectar_alertas_conocimiento(case, actuaciones, conocimiento, stages):
+    """
+    Aplica alertas proactivas y reactivas del knowledge base al caso.
+
+    Parámetros:
+    - case: dict del caso desde cases.json
+    - actuaciones: lista de actuaciones scrapeadas en esta corrida
+    - conocimiento: dict cargado desde conocimiento_juzgados.json
+    - stages: dict final de etapas detectadas {etapa: 'OK'/'NO'/''}
+
+    Retorna lista de strings con mensajes de alerta (vacía si no aplica).
+    """
+    if not conocimiento:
+        return []
+
+    juzgado   = case.get('juzgado')
+    secretaria = case.get('secretaria')
+    if not juzgado or not secretaria:
+        return []
+
+    grupo_key = f'J{int(juzgado):02d}-S{int(secretaria):02d}'
+    perfil = conocimiento.get(grupo_key)
+    if not perfil:
+        return []
+
+    alertas = []
+
+    # Alertas proactivas — basadas en etapas presentes/ausentes
+    for alerta in perfil.get('alertas_proactivas', []):
+        cond = alerta.get('condicion', {})
+        etapa_presente = cond.get('etapa_presente')
+        etapa_ausente  = cond.get('etapa_ausente')
+        if (not etapa_presente or stages.get(etapa_presente) == 'OK') and \
+           (not etapa_ausente  or not stages.get(etapa_ausente)):
+            alertas.append(alerta['mensaje'])
+
+    # Alertas reactivas — basadas en actuaciones nuevas (posteriores a lastActionDate)
+    last_date = case.get('lastActionDate')  # DD/MM/YYYY o None
+
+    def es_nueva(act):
+        if not last_date:
+            return True
+        return act.get('fecha', '') > last_date  # lexicográfico: aceptable para alertas
+
+    nuevas = [a for a in actuaciones if es_nueva(a)]
+    for alerta in perfil.get('alertas_reactivas', []):
+        keywords = alerta.get('keywords', [])
+        for act in nuevas:
+            desc_up = act.get('descripcion', '').upper()
+            if any(kw.upper() in desc_up for kw in keywords):
+                alertas.append(alerta['mensaje'])
+                break  # una alerta por keyword-group, no duplicar
+
+    return alertas
+
+
 # ── Merge de stages ───────────────────────────────────────────────────────────
 
 def merge_stages(existing, detected):
@@ -999,6 +1080,12 @@ def process_case(driver, case, ocr, cases, telegram_data):
     groq_stages = (groq_result or {}).get('stages', {})
     final_stages = merge_stages(merged_so_far, groq_stages)
 
+    # Knowledge base alerts (proactivas y reactivas)
+    conocimiento = _cargar_conocimiento()
+    alertas_kb = detectar_alertas_conocimiento(case, actuaciones, conocimiento, final_stages)
+    for msg in alertas_kb:
+        print(f'    [KB] Alerta: {msg[:80]}')
+
     # Detectar etapas completadas por primera vez en esta corrida
     prev_sentencia      = existing_stages.get('sentencia', '')
     prev_carta          = existing_stages.get('carta_ciudadania', '')
@@ -1063,6 +1150,9 @@ def process_case(driver, case, ocr, cases, telegram_data):
         fecha_fmt = f"{fj[8:10]}/{fj[5:7]}/{fj[:4]}"
         add_notification(case, 'jura_asignada', f"Jura asignada — {client_name}: {fecha_fmt}")
         print(f"    [NOTIF] Jura asignada: {fecha_fmt}")
+
+    for msg in alertas_kb:
+        add_notification(case, 'conocimiento_alert', msg)
 
     return driver
 
