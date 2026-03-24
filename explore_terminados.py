@@ -161,98 +161,147 @@ def navegar_a_caso(driver, ocr, case_number):
 
 # ── Extracción de datos ────────────────────────────────────────────────────────
 
-def get_actuaciones_cit(driver):
+def get_actuaciones_cit(driver, tag='W?'):
     """
-    Extrae TODAS las filas de la tabla de actuaciones del expediente actual.
+    Extrae TODAS las actuaciones del expediente actual paginando.
     Retorna lista de dicts [{tipo, descripcion, fecha, oficina, pdf_href}] de más antigua a más reciente.
-    No abre documentos — solo lee el texto de la tabla.
-    pdf_href es str solo si el tipo es FIRMA DESPACHO y hay botón de descarga, None en los demás casos.
+    No descarga PDFs — solo lee el texto de la tabla.
     """
     actuaciones = []
-    try:
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        tables = soup.find_all('table')
+    pagina = 1
 
-        tabla = None
-        for t in tables:
-            txt = t.get_text(' ')
-            if not re.search(r'\d{2}/\d{2}/\d{4}', txt):
+    while True:
+        plog(f'    [ACT] pagina {pagina}...')
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+        # Encontrar tabla de actuaciones
+        tabla_idx = None
+        for i, table in enumerate(soup.find_all('table')):
+            if not re.search(r'\d{2}/\d{2}/\d{4}', table.get_text(' ')):
                 continue
-            rows = t.find_all('tr')
+            rows = table.find_all('tr')
             if len(rows) < 2:
                 continue
             header = rows[0].get_text(' ').lower()
-            if any(w in header for w in ['tipo', 'descripci', 'fecha', 'actu', 'descargar']):
-                tabla = t
+            if any(w in header for w in ['tipo', 'descripci', 'fecha', 'actu']):
+                tabla_idx = i
                 break
 
-        if tabla is None:
-            plog("    [ACT] No se encontró tabla de actuaciones")
-            return actuaciones
+        if tabla_idx is None:
+            plog(f'    [ACT] No se encontró tabla en página {pagina}')
+            break
 
-        filas = tabla.find_all('tr')[1:]  # saltar encabezado
-        for fila in filas:
-            # Extraer href del botón de descarga si existe
-            pdf_href = None
-            for td in fila.find_all('td'):
-                a = td.find('a', href=True)
-                if a and a['href']:
-                    href = a['href']
-                    if 'descargar' in href.lower() or href.lower().endswith('.pdf') or 'documento' in href.lower():
-                        pdf_href = href
-                        break
-                # También buscar forms con action
-                form = td.find('form')
-                if form and form.get('action'):
-                    action = form['action']
-                    if 'descargar' in action.lower() or 'documento' in action.lower():
-                        pdf_href = action
-                        break
-            celdas = [td.get_text(' ', strip=True) for td in fila.find_all('td')]
-            celdas = [c for c in celdas if c and c not in ('Descargar', 'Ver', 'Descargar Actuación')]
-            if not celdas:
+        # Detectar columnas por encabezado usando Selenium
+        sel_tables = driver.find_elements(By.TAG_NAME, 'table')
+        if tabla_idx >= len(sel_tables):
+            break
+        tabla_sel = sel_tables[tabla_idx]
+        todas_filas = tabla_sel.find_elements(By.TAG_NAME, 'tr')
+
+        col_fecha = col_tipo = col_desc = col_oficina = -1
+        if todas_filas:
+            ths = todas_filas[0].find_elements(By.TAG_NAME, 'th')
+            if not ths:
+                ths = todas_filas[0].find_elements(By.TAG_NAME, 'td')
+            for ci, h in enumerate([t.text.strip().lower() for t in ths]):
+                if 'fecha' in h:
+                    col_fecha = ci
+                elif 'tipo' in h:
+                    col_tipo = ci
+                elif 'descripci' in h or 'detalle' in h:
+                    col_desc = ci
+                elif 'oficina' in h:
+                    col_oficina = ci
+
+        for fila in todas_filas[1:]:
+            celdas = [c.text.strip() for c in fila.find_elements(By.TAG_NAME, 'td')]
+            if not any(celdas):
                 continue
 
-            fecha_m = next(
-                (re.search(r'\d{2}/\d{2}/\d{4}', c) for c in celdas if re.search(r'\d{2}/\d{2}/\d{4}', c)),
-                None
-            )
-            fecha = fecha_m.group(0) if fecha_m else ''
+            fecha   = celdas[col_fecha]   if col_fecha   >= 0 and col_fecha   < len(celdas) else ''
+            tipo    = celdas[col_tipo]    if col_tipo    >= 0 and col_tipo    < len(celdas) else ''
+            desc    = celdas[col_desc]    if col_desc    >= 0 and col_desc    < len(celdas) else ''
+            oficina = celdas[col_oficina] if col_oficina >= 0 and col_oficina < len(celdas) else ''
 
-            def _val(c):
-                return c.split(':\n', 1)[1].strip() if ':\n' in c else c.strip()
+            fecha   = re.sub(r'^Fecha:\s*',          '', fecha).strip()
+            tipo    = re.sub(r'^Tipo actuacion:\s*', '', tipo).strip()
+            desc    = re.sub(r'^Detalle:\s*',        '', desc).strip()
+            oficina = re.sub(r'^Oficina:\s*',        '', oficina).strip()
 
-            tipo_cell    = next((c for c in celdas if re.match(r'tipo\s+actua', c, re.I)), '')
-            detalle_cell = next((c for c in celdas if re.match(r'detalle', c, re.I)), '')
-            oficina_cell = next((c for c in celdas if re.match(r'oficina', c, re.I)), '')
+            if not fecha:
+                for t in celdas:
+                    fm = re.search(r'\d{1,2}/\d{2}/\d{4}', t)
+                    if fm:
+                        fecha = fm.group(0)
+                        break
 
-            tipo    = _val(tipo_cell)    if tipo_cell    else ''
-            detalle = _val(detalle_cell) if detalle_cell else ''
-            oficina = _val(oficina_cell) if oficina_cell else ''
-
-            if tipo or detalle:
-                descripcion = ' — '.join(filter(None, [tipo, detalle]))
-            else:
-                _RUIDO = re.compile(r'descargar|^\s*ver\s*$|^fecha:|^[A-Z]{2,4}\s*$', re.I)
-                otros = [c for c in celdas if c and c != fecha
-                         and not re.search(r'\d{2}/\d{2}/\d{4}', c)
-                         and not _RUIDO.search(c)]
-                descripcion = ' — '.join(filter(None, otros))
+            descripcion = ' — '.join(filter(None, [tipo, desc])) if (tipo or desc) else ''
 
             if descripcion or fecha:
-                # pdf_href: str solo si FIRMA DESPACHO con botón, None en todos los demás casos
-                act_pdf_href = pdf_href if tipo.upper().strip() == 'FIRMA DESPACHO' and pdf_href else None
                 actuaciones.append({
-                    'fecha': fecha,
-                    'tipo': tipo,
+                    'fecha':       fecha,
+                    'tipo':        tipo,
                     'descripcion': descripcion,
-                    'oficina': oficina,
-                    'pdf_href': act_pdf_href,
+                    'oficina':     oficina,
+                    'pdf_href':    None,
                 })
 
-        plog(f"    [ACT] {len(actuaciones)} actuaciones extraídas")
-    except Exception as e:
-        plog(f"    [ACT] Error: {e}")
+        # Buscar página siguiente
+        siguiente = None
+        try:
+            cands = driver.find_elements(By.XPATH,
+                f"//*[normalize-space(text())='{pagina + 1}']"
+                f"[self::a or self::button or self::span or self::td or self::li]"
+            )
+            for c in cands:
+                try:
+                    if c.is_displayed():
+                        siguiente = c
+                        break
+                except Exception:
+                    pass
+
+            if not siguiente:
+                for txt in ['>', '>>', '»', 'Siguiente', 'Next']:
+                    cands = driver.find_elements(By.XPATH,
+                        f"//*[self::a or self::button or self::span]"
+                        f"[contains(normalize-space(text()),'{txt}')]"
+                    )
+                    for c in cands:
+                        try:
+                            if c.is_displayed():
+                                siguiente = c
+                                break
+                        except Exception:
+                            pass
+                    if siguiente:
+                        break
+
+            if not siguiente:
+                for c in driver.find_elements(By.XPATH,
+                    "//a[.//img[contains(@src,'next') or contains(@alt,'next') or contains(@alt,'sig')]]"
+                ):
+                    try:
+                        if c.is_displayed():
+                            siguiente = c
+                            break
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        if not siguiente:
+            plog(f'    [ACT] no hay página {pagina + 1} — fin ({len(actuaciones)} total)')
+            break
+
+        try:
+            plog(f'    [ACT] yendo a página {pagina + 1}...')
+            driver.execute_script("arguments[0].click();", siguiente)
+            time.sleep(3)
+            pagina += 1
+        except Exception as e:
+            plog(f'    [ACT] error paginando: {e}')
+            break
 
     # Devolver de más antigua a más reciente (el PJN muestra más reciente primero)
     return list(reversed(actuaciones))
