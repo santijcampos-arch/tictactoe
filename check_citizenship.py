@@ -75,6 +75,7 @@ _GROQ_LAST = 0.0
 _GROQ_LOCK = threading.Lock()
 
 _conocimiento_cache = None
+_CONOCIMIENTO_LOCK  = threading.Lock()
 
 def _cargar_conocimiento():
     """
@@ -82,19 +83,20 @@ def _cargar_conocimiento():
     Retorna dict vacío si el archivo no existe (no crashea).
     """
     global _conocimiento_cache
-    if _conocimiento_cache is not None:
+    with _CONOCIMIENTO_LOCK:
+        if _conocimiento_cache is not None:
+            return _conocimiento_cache
+        if not os.path.exists(CONOCIMIENTO_FILE):
+            _conocimiento_cache = {}
+            return _conocimiento_cache
+        try:
+            with open(CONOCIMIENTO_FILE, encoding='utf-8') as f:
+                _conocimiento_cache = json.load(f)
+            print(f'  [KB] Conocimiento cargado: {list(_conocimiento_cache.keys())}')
+        except Exception as e:
+            print(f'  [KB] Error cargando conocimiento: {e}')
+            _conocimiento_cache = {}
         return _conocimiento_cache
-    if not os.path.exists(CONOCIMIENTO_FILE):
-        _conocimiento_cache = {}
-        return _conocimiento_cache
-    try:
-        with open(CONOCIMIENTO_FILE, encoding='utf-8') as f:
-            _conocimiento_cache = json.load(f)
-        print(f'  [KB] Conocimiento cargado: {list(_conocimiento_cache.keys())}')
-    except Exception as e:
-        print(f'  [KB] Error cargando conocimiento: {e}')
-        _conocimiento_cache = {}
-    return _conocimiento_cache
 
 AUTO  = '--auto'  in sys.argv
 LIMIT = None
@@ -959,7 +961,11 @@ def detectar_alertas_conocimiento(case, actuaciones, conocimiento, stages):
     def es_nueva(act):
         if not last_date:
             return True
-        return act.get('fecha', '') > last_date  # lexicográfico: aceptable para alertas
+        # Comparación lexicográfica DD/MM/YYYY. Funciona correctamente dentro del mismo
+        # mes/año pero puede ser incorrecta entre meses distintos (ej: "15/12/2024" >
+        # "01/03/2024" → True correcto, pero "05/01/2025" > "20/12/2024" → False incorrecto).
+        # Acepta el error: prefiere sobre-alertar antes que perder alertas.
+        return act.get('fecha', '') > last_date
 
     nuevas = [a for a in actuaciones if es_nueva(a)]
     for alerta in perfil.get('alertas_reactivas', []):
