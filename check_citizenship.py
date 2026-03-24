@@ -966,10 +966,14 @@ def process_case(driver, case, ocr, cases, telegram_data):
         return driver
 
     # Detectar fecha de jura
-    cookies = {c['name']: c['value'] for c in driver.get_cookies()}
-    headers = {'User-Agent': driver.execute_script("return navigator.userAgent")}
-    jura = detectar_jura(actuaciones, cookies, headers)
-    fecha_jura_anterior = case.get('fechaJura')
+    try:
+        cookies = {c['name']: c['value'] for c in driver.get_cookies()}
+        headers = {'User-Agent': driver.execute_script("return navigator.userAgent")}
+        jura = detectar_jura(actuaciones, cookies, headers)
+    except Exception as e:
+        print(f"    [JURA] Error al detectar jura: {e}")
+        jura = {'fechaJura': None, 'juraCompletada': False}
+    fecha_jura_anterior = None   # se actualiza dentro del lock con el valor real del archivo
     if jura['fechaJura']:
         print(f"    [JURA] Fecha detectada: {jura['fechaJura']}")
     if jura['juraCompletada']:
@@ -1013,6 +1017,7 @@ def process_case(driver, case, ocr, cases, telegram_data):
                 all_cases = json.load(f)
             idx = next((i for i, c in enumerate(all_cases) if c.get('id') == case['id']), None)
             if idx is not None:
+                fecha_jura_anterior = all_cases[idx].get('fechaJura')
                 all_cases[idx]['stages']        = final_stages
                 all_cases[idx]['lastActionDate'] = pjn_last_date
                 all_cases[idx]['lastPjnCheck']   = datetime.now().isoformat()
